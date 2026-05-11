@@ -16,10 +16,10 @@ if [ $# -ne 0 ]; then
     overrides="$*"
 fi
 
-export WANDB_API_KEY="your key"
-export WANDB_BASE_URL="your url"
-export WANDB_TEAM_NAME="your team name"
-export WANDB_PROJECT="your project"
+export WANDB_API_KEY="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"
+export WANDB_BASE_URL="https://api.wandb.ai"
+export WANDB_TEAM_NAME="takuya50719-the-university-of-tokyo"
+export WANDB_PROJECT="lingbot-va"
 
 ## node setting
 num_gpu=${NGPU}
@@ -30,7 +30,7 @@ config_name=${CONFIG_NAME}
 
 ## cmd setting
 export TOKENIZERS_PARALLELISM=false
-PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True" TORCHFT_LIGHTHOUSE=${torchft_lighthouse} \
+PYTORCH_ALLOC_CONF="expandable_segments:True" TORCHFT_LIGHTHOUSE=${torchft_lighthouse} \
 python -m torch.distributed.run \
     --nproc_per_node=${num_gpu} \
     --local-ranks-filter=${log_rank} \

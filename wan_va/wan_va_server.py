@@ -65,6 +65,7 @@ class VA_Server:
             torch_device='cpu' if self.enable_offload else self.device,
         )
         self.streaming_vae = WanVAEStreamingWrapper(self.vae)
+        self.video_processor = VideoProcessor(vae_scale_factor=1)
 
         self.tokenizer = load_tokenizer(
             os.path.join(job_config.wan22_pretrained_model_name_or_path,
@@ -499,22 +500,22 @@ class VA_Server:
                     None,
                     frame_st_id=frame_st_id)
 
-                video_noise_pred = self.transformer(
+                video_velocity_pred = self.transformer(
                     self._repeat_input_for_cfg(input_dict['latent_res_lst']),
                     update_cache=1 if last_step else 0,
                     cache_name=self.cache_name,
                     action_mode=False)
 
                 if not last_step or video_step != -1:
-                    video_noise_pred = data_seq_to_patch(
-                        self.job_config.patch_size, video_noise_pred,
+                    video_velocity_pred = data_seq_to_patch(
+                        self.job_config.patch_size, video_velocity_pred,
                         frame_chunk_size, self.latent_height,
                         self.latent_width, batch_size=2 if self.use_cfg else 1)
                     if self.job_config.guidance_scale > 1:
-                        video_noise_pred = video_noise_pred[1:] + self.job_config.guidance_scale * (video_noise_pred[:1] - video_noise_pred[1:])
+                        video_velocity_pred = video_velocity_pred[1:] + self.job_config.guidance_scale * (video_velocity_pred[:1] - video_velocity_pred[1:])
                     else:
-                        video_noise_pred = video_noise_pred[:1]
-                    latents = self.scheduler.step(video_noise_pred,
+                        video_velocity_pred = video_velocity_pred[:1]
+                    latents = self.scheduler.step(video_velocity_pred,
                                                   t,
                                                   latents,
                                                   return_dict=False)
@@ -539,21 +540,21 @@ class VA_Server:
                     None,
                     action_cond,
                     frame_st_id=frame_st_id)
-                action_noise_pred = self.transformer(
+                action_velocity_pred = self.transformer(
                     self._repeat_input_for_cfg(input_dict['action_res_lst']),
                     update_cache=1 if last_step else 0,
                     cache_name=self.cache_name,
                     action_mode=True)
 
                 if not last_step:
-                    action_noise_pred = rearrange(action_noise_pred,
+                    action_velocity_pred = rearrange(action_velocity_pred,
                                                   'b (f n) c -> b c f n 1',
                                                   f=frame_chunk_size)
                     if self.job_config.action_guidance_scale > 1:
-                        action_noise_pred = action_noise_pred[1:] + self.job_config.action_guidance_scale * (action_noise_pred[:1] - action_noise_pred[1:])
+                        action_velocity_pred = action_velocity_pred[1:] + self.job_config.action_guidance_scale * (action_velocity_pred[:1] - action_velocity_pred[1:])
                     else:
-                        action_noise_pred = action_noise_pred[:1]
-                    actions = self.action_scheduler.step(action_noise_pred,
+                        action_velocity_pred = action_velocity_pred[:1]
+                    actions = self.action_scheduler.step(action_velocity_pred,
                                                          t,
                                                          actions,
                                                          return_dict=False)
@@ -620,8 +621,13 @@ class VA_Server:
             return dict()
         else:
             logger.info(f"################# Infer One Chunk #################")
-            action, _ = self._infer(obs, frame_st_id=self.frame_st_id)
-            return dict(action=action)
+            save_visualization = obs.get('save_visualization', False)
+            action, latents = self._infer(obs, frame_st_id=self.frame_st_id)
+            out = dict(action=action)
+            if save_visualization:
+                video = self.decode_one_video(latents, output_type='np')
+                out['video'] = video[0] if hasattr(video, 'shape') and video.ndim == 5 else video
+            return out
     
     def decode_one_video(self, latents, output_type):
         latents = latents.to(self.vae.dtype)
@@ -646,7 +652,6 @@ class VA_Server:
     
     @torch.no_grad()
     def generate(self):
-        self.video_processor = VideoProcessor(vae_scale_factor=1)
         self._reset(self.job_config.prompt)
         init_obs = self.load_init_obs()
         pred_latent_lst = []

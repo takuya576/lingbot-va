@@ -35,6 +35,7 @@ XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 python -m evaluation.robotwin.eval_polict_cli
     --video_guidance_scale 5 \
     --action_guidance_scale 1 \
     --test_num 100 \
-    --port ${PORT}
+    --port ${PORT} \
+    --save_visualization True
 
 

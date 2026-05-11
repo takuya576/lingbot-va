@@ -32,6 +32,92 @@ def save_video(real_obs_list, save_path, fps=15, video_names=["observation.image
     print(f"✅ Video saved to: {save_path}")
 
 
+def add_title_bar(img, text, font_scale=0.4, thickness=1, bar_height=20):
+    """Add a black title bar with centered white text above an image."""
+    h, w, _ = img.shape
+    title_bar = np.zeros((bar_height, w, 3), dtype=np.uint8)
+    (text_w, text_h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+    text_x = max(0, (w - text_w) // 2)
+    text_y = (bar_height + text_h) // 2 - 2
+    cv2.putText(title_bar, text, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX,
+                font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
+    return np.vstack([title_bar, img])
+
+
+def resize_h(img, h):
+    if img.shape[0] != h:
+        w = int(img.shape[1] * h / img.shape[0])
+        img = cv2.resize(img, (w, h))
+    img = np.ascontiguousarray(img)
+    if img.dtype != np.uint8:
+        img = (img * 255).astype(np.uint8)
+    return img
+
+
+def split_two_panel_imagined(img_frame):
+    """Server (env_type='none') concatenates obs_cam_keys along width.
+    For LIBERO that's [agentview ‖ eye_in_hand]. Returns (agentview, eye_in_hand) as uint8."""
+    if img_frame.dtype != np.uint8:
+        if img_frame.max() <= 1.0001:
+            img_frame = (img_frame * 255).astype(np.uint8)
+        else:
+            img_frame = img_frame.astype(np.uint8)
+    W = img_frame.shape[1]
+    half = W // 2
+    return img_frame[:, :half], img_frame[:, half:]
+
+
+def save_comparison_video(real_obs_list, imagined_video, save_path, fps=15,
+                          video_names=("observation.images.agentview_rgb",
+                                       "observation.images.eye_in_hand_rgb")):
+    if not real_obs_list:
+        print("❌ No real observation frames")
+        return
+
+    n_real = len(real_obs_list)
+    if imagined_video is not None:
+        if isinstance(imagined_video, list):
+            imagined_video = np.concatenate(imagined_video, 0)
+        n_imagined = len(imagined_video)
+    else:
+        n_imagined = 0
+
+    print(f"Saving comparison video: Real {n_real} frames, Imagined {n_imagined} frames...")
+
+    first_obs = real_obs_list[0]
+    base_h = first_obs[video_names[0]].shape[0]
+    row_real_template = np.hstack([resize_h(first_obs[name], base_h) for name in video_names])
+    target_width = row_real_template.shape[1]
+
+    final_frames = []
+    for i in range(n_real):
+        obs = real_obs_list[i]
+        row_real = np.hstack([resize_h(obs[name], base_h) for name in video_names])
+        if row_real.shape[1] != target_width:
+            row_real = cv2.resize(row_real, (target_width, base_h))
+        row_real = np.ascontiguousarray(row_real)
+        row_real = add_title_bar(row_real, "Real Obs (Agentview / Eye-in-hand)")
+
+        if imagined_video is not None and i < n_imagined:
+            ag_im, eih_im = split_two_panel_imagined(imagined_video[i])
+            row_imagined = np.hstack([resize_h(ag_im, base_h), resize_h(eih_im, base_h)])
+            if row_imagined.shape[1] != target_width:
+                row_imagined = cv2.resize(row_imagined, (target_width, base_h))
+        else:
+            row_imagined = np.zeros((base_h, target_width, 3), dtype=np.uint8)
+            cv2.putText(row_imagined, "Coming soon",
+                        (target_width // 2 - 50, base_h // 2),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 100, 100), 1)
+
+        row_imagined = np.ascontiguousarray(row_imagined)
+        row_imagined = add_title_bar(row_imagined, "Imagined Video Stream")
+        full_frame = np.ascontiguousarray(np.vstack([row_real, row_imagined]))
+        final_frames.append(full_frame)
+
+    imageio.mimsave(save_path, final_frames, fps=fps)
+    print(f"✅ Comparison video saved to: {save_path}")
+
+
 def construct_single_env(env_args):
     count = 0
     env = None
@@ -74,7 +160,7 @@ def env_one_step(env_in, action):
     return _extract_obs(obs), done
 
 
-def run_one(model, libero_benchmark, task_idx, out_dir, episode_idx):
+def run_one(model, libero_benchmark, task_idx, out_dir, episode_idx, save_visualization=False):
     benchmark_dict = benchmark.get_benchmark_dict()
     benchmark_instance = benchmark_dict[libero_benchmark]()
     num_tasks = benchmark_instance.get_num_tasks()
@@ -93,11 +179,15 @@ def run_one(model, libero_benchmark, task_idx, out_dir, episode_idx):
     ret = model.infer(dict(reset=True, prompt=prompt))
 
     full_obs_list = []
+    gen_video_list = []
     done = False
     first = True
     while cur_env.env.timestep < 800:
-        ret = model.infer(dict(obs=first_obs, prompt=prompt))
+        ret = model.infer(dict(obs=first_obs, prompt=prompt,
+                               save_visualization=save_visualization))
         action = ret['action']
+        if save_visualization and 'video' in ret:
+            gen_video_list.append(ret['video'])
 
         key_frame_list = []
         assert action.shape[2] % 4 == 0
@@ -133,11 +223,21 @@ def run_one(model, libero_benchmark, task_idx, out_dir, episode_idx):
         video_names=["observation.images.agentview_rgb", "observation.images.eye_in_hand_rgb"]
     )
 
+    if save_visualization:
+        cmp_path = out_file.parent / "comparison" / out_file.name
+        cmp_path.parent.mkdir(exist_ok=True, parents=True)
+        save_comparison_video(
+            real_obs_list=[first_obs] + full_obs_list,
+            imagined_video=gen_video_list if gen_video_list else None,
+            save_path=str(cmp_path),
+            fps=15,
+        )
+
     cur_env.close()
     return done
 
 
-def run(libero_benchmark, port, out_dir, test_num, task_range=None):
+def run(libero_benchmark, port, out_dir, test_num, task_range=None, save_visualization=False):
     '''
         task_range: [start, end) for splitting tasks
     '''
@@ -167,7 +267,8 @@ def run(libero_benchmark, port, out_dir, test_num, task_range=None):
             succ_num = 0.
 
         for episode_idx in tqdm(episode_list, total=len(episode_list)):
-            res_i = run_one(model, libero_benchmark, task_idx, out_dir, episode_idx)
+            res_i = run_one(model, libero_benchmark, task_idx, out_dir, episode_idx,
+                            save_visualization=save_visualization)
             succ_num += res_i
             succ_rate = succ_num / (episode_idx + 1)
             print(f"Success rate: {succ_rate}, success num: {succ_num}, total num: {episode_idx + 1}")
@@ -214,6 +315,12 @@ def main():
         type=str,
         default="outputs/libero",
         help="Output directory for results",
+    )
+    parser.add_argument(
+        "--save-visualization",
+        type=bool,
+        default=False,
+        help="Also save real-vs-imagined comparison MP4 to <out_dir>/<benchmark>/<task>/comparison/",
     )
     args = parser.parse_args()
     run(**vars(args))
