@@ -4,19 +4,20 @@ set -x
 
 umask 007
  
-NGPU=${NGPU:-"8"}
+NGPU=${NGPU:-"2"}
 MASTER_PORT=${MASTER_PORT:-"29501"}
 PORT=${PORT:-"1106"}
 LOG_RANK=${LOG_RANK:-"0"}
 TORCHFT_LIGHTHOUSE=${TORCHFT_LIGHTHOUSE:-"http://localhost:29510"}
-CONFIG_NAME=${CONFIG_NAME:-"robotwin_train"} # robotwin_train, libero_train
+CONFIG_NAME=${CONFIG_NAME:-"robotwin_train"} # robotwin_train, robotwin_lora_train, libero_train
 
 overrides=""
 if [ $# -ne 0 ]; then
     overrides="$*"
 fi
 
-export WANDB_API_KEY="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"
+# WANDB_API_KEY must come from the environment (e.g. `source .env.local`), not
+# from this file -- it is committed to git.
 export WANDB_BASE_URL="https://api.wandb.ai"
 export WANDB_TEAM_NAME="takuya50719-the-university-of-tokyo"
 export WANDB_PROJECT="lingbot-va"
@@ -30,7 +31,7 @@ config_name=${CONFIG_NAME}
 
 ## cmd setting
 export TOKENIZERS_PARALLELISM=false
-PYTORCH_ALLOC_CONF="expandable_segments:True" TORCHFT_LIGHTHOUSE=${torchft_lighthouse} \
+PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True" TORCHFT_LIGHTHOUSE=${torchft_lighthouse} \
 python -m torch.distributed.run \
     --nproc_per_node=${num_gpu} \
     --local-ranks-filter=${log_rank} \

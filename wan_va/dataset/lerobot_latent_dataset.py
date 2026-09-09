@@ -284,7 +284,42 @@ class LatentLeRobotDataset(LeRobotDataset):
         action_aligned *= action_mask_aligned
         return torch.from_numpy(action_aligned).float(), torch.from_numpy(action_mask_aligned).bool()
 
+    def _packed_seq_len(self, out_dict):
+        """Token count of the sequence `forward_train` packs from this sample.
+
+        `WanTransformer3DModel.forward_train` concatenates four segments --
+        noisy video, conditioning video, noisy action, conditioning action --
+        and each pair has identical shape, hence the factor of 2 on both token
+        counts. The result is then padded to a multiple of 128.
+
+        Activation memory scales with this, and it is the one training cost LoRA
+        does not reduce. Assumes batch_size 1 (every config uses it, and
+        forward_train packs any batch into this same sequence dimension).
+        """
+        _, num_frames, height, width = out_dict['latents'].shape
+        patch_f, patch_h, patch_w = self.config.patch_size
+        latent_tokens = (num_frames // patch_f) * (height // patch_h) * (
+            width // patch_w)
+        action_shape = out_dict['actions'].shape
+        action_tokens = action_shape[1] * action_shape[2] * action_shape[3]
+        total = 2 * latent_tokens + 2 * action_tokens
+        return total + (-total) % 128
+
     def __getitem__(self, idx) -> dict:
+        max_seq_len = getattr(self.config, 'max_seq_len', None)
+        if max_seq_len is None:
+            return self._load_item(idx)
+        # Walk forward past over-long samples rather than OOMing on them.
+        # Bounded, so a pathological dataset raises instead of looping forever.
+        for offset in range(len(self.new_metas)):
+            out_dict = self._load_item(idx + offset)
+            if self._packed_seq_len(out_dict) <= max_seq_len:
+                return out_dict
+        raise RuntimeError(
+            f"every sample exceeds max_seq_len={max_seq_len}; raise it or "
+            "shorten the dataset segments")
+
+    def _load_item(self, idx) -> dict:
         idx = idx % len(self.new_metas)
         cur_meta = self.new_metas[idx]
         episode_index = cur_meta["episode_index"]

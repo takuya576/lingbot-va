@@ -1,1 +1,12 @@
 *.pyc
+__pycache__/
+Datasets/
+LIBERO/
+outputs/
+RoboTwin/
+train_out/
+visualization/real/
+Pretrained_models/
+wandb/
+*.out
+example/*/real/

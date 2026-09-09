@@ -33,6 +33,13 @@ from einops import rearrange
 from modules.utils import (
     load_transformer,
 )
+from modules.lora import (
+    count_parameters,
+    inject_lora,
+    lora_scaling_map,
+    lora_state_dict,
+    merge_lora_state_dict,
+)
 from utils import (
     init_logger, 
     logger, 
@@ -50,7 +57,10 @@ import gc
 class Trainer:
     def __init__(self, config):
         if config.enable_wandb and config.rank == 0:
-            wandb.login(host=os.environ['WANDB_BASE_URL'], key=os.environ['WANDB_API_KEY'])
+            # key=None falls back to a cached login (~/.netrc), so an unset
+            # WANDB_API_KEY is not fatal.
+            wandb.login(host=os.environ['WANDB_BASE_URL'],
+                        key=os.environ.get('WANDB_API_KEY'))
             self.wandb = wandb
             self.wandb.init(
                 entity=os.environ["WANDB_TEAM_NAME"],
@@ -83,10 +93,56 @@ class Trainer:
 
         self.transformer = load_transformer(
             transformer_path,
-            torch_dtype=torch.float32,
+            torch_dtype=getattr(config, 'base_param_dtype', torch.float32),
             torch_device='cpu',
             attn_mode="flex"
         )
+
+        # LoRA must be injected after from_pretrained but before apply_ac (which
+        # rewrites module paths) and before shard_model (which turns parameters
+        # into DTensors).
+        self.use_lora = getattr(config, 'use_lora', False)
+        self.lora_scaling_map = None
+        self.full_train_prefixes = []
+        # Captured pre-injection, so save_checkpoint can assert the merged
+        # checkpoint has exactly the un-adapted key set.
+        self.base_state_dict_keys = list(self.transformer.state_dict().keys())
+        if self.use_lora:
+            logger.info("Injecting LoRA adapters...")
+            self.transformer.requires_grad_(False)
+            matched = inject_lora(
+                self.transformer,
+                rank=config.lora_rank,
+                alpha=config.lora_alpha,
+                dropout=config.lora_dropout,
+                target_modules=config.lora_target_modules,
+            )
+            self.lora_scaling_map = lora_scaling_map(self.transformer)
+            # Modules trained fully, with no adapter. See shared_config.py.
+            if getattr(config, 'full_train_action_io', True):
+                self.full_train_prefixes += ['action_embedder', 'action_proj_out']
+            if getattr(config, 'full_train_action_cond_embedder', False):
+                self.full_train_prefixes += ['condition_embedder_action']
+            for prefix in self.full_train_prefixes:
+                submodule = self.transformer.get_submodule(prefix)
+                # Promote to fp32 so these keep fp32 master weights and Adam
+                # states like the adapters do, rather than inheriting the frozen
+                # base's bf16 -- the action decoder is precision-sensitive. It
+                # also keeps the trainable dtype uniform, which is what FSDP2
+                # asserts on per shard group.
+                submodule.to(torch.float32)
+                submodule.requires_grad_(True)
+            # lora_A.weight is [rank, in_features] and FSDP2 shards on dim 0, so
+            # dim 0 here is the LoRA rank. With fewer rows than ranks, FSDP2 pads
+            # with empty shards -- still correct, but some ranks hold no rows of
+            # the tensor, so it buys no memory and costs extra collectives.
+            if config.lora_rank < config.world_size:
+                logger.warning(
+                    f"lora_rank={config.lora_rank} is smaller than world_size="
+                    f"{config.world_size}; lora_A shards will be zero-padded on "
+                    "some ranks. Prefer a rank >= world_size.")
+            logger.info(f"LoRA injected into {len(matched)} modules "
+                        f"(rank={config.lora_rank}, alpha={config.lora_alpha})")
 
         logger.info("Setting up activation checkpointing ...")
         apply_ac(self.transformer)
@@ -101,11 +157,21 @@ class Trainer:
             eval_mode=False,
         )
         self.transformer.train()
-        self.transformer.requires_grad_(True)
+        if not self.use_lora:
+            self.transformer.requires_grad_(True)
+
+        # Cache the trainable set once: it is also what gets grad-clipped.
+        self.trainable_params = [
+            p for p in self.transformer.parameters() if p.requires_grad
+        ]
+        num_trainable, num_total = count_parameters(self.transformer)
+        logger.info(
+            f"Trainable parameters: {num_trainable:,} / {num_total:,} "
+            f"({100 * num_trainable / max(num_total, 1):.2f}%)")
 
         # Optimizer
         self.optimizer = torch.optim.AdamW(
-            [p for p in self.transformer.parameters() if p.requires_grad],
+            self.trainable_params,
             lr=config.learning_rate,
             betas=(config.beta1, config.beta2),
             eps=1e-8,
@@ -316,7 +382,7 @@ class Trainer:
         
         # Only update weights after accumulating gradients
         if should_sync:
-            total_norm = torch.nn.utils.clip_grad_norm_(self.transformer.parameters(), 2.0)
+            total_norm = torch.nn.utils.clip_grad_norm_(self.trainable_params, 2.0)
             self.optimizer.step()
             self.lr_scheduler.step()
             self.optimizer.zero_grad()
@@ -335,14 +401,31 @@ class Trainer:
                 self.transformer,
                 options=StateDictOptions(full_state_dict=True, cpu_offload=True),
             )
-            state_dict_bf16 = {k: v.to(torch.bfloat16) for k, v in state_dict.items()}
             # optim_state = get_optimizer_state_dict(
             #         self.transformer, self.optimizer,
             #         options=StateDictOptions(full_state_dict=True, cpu_offload=True),
             #     )
 
-            # Only rank 0 saves the checkpoint
+            # Only rank 0 saves the checkpoint. The gather above is a collective,
+            # but with cpu_offload it only populates rank 0 -- so everything that
+            # touches the tensors has to happen under this branch.
             if self.config.rank == 0:
+                adapter_state = None
+                if self.use_lora:
+                    # Keep the adapter separately (it is what makes resume
+                    # possible), then fold it into the base weights so the saved
+                    # checkpoint has exactly the key set the inference server
+                    # already loads.
+                    adapter_state = lora_state_dict(
+                        state_dict,
+                        extra_prefixes=tuple(self.full_train_prefixes))
+                    # Merge in fp32: folding a low-rank update after the bf16
+                    # cast would lose precision.
+                    state_dict = merge_lora_state_dict(state_dict,
+                                                       self.lora_scaling_map)
+                state_dict_bf16 = {
+                    k: v.to(torch.bfloat16) for k, v in state_dict.items()
+                }
                 checkpoint_dir = self.save_dir / f"checkpoint_step_{self.step}"
                 checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -351,6 +434,27 @@ class Trainer:
                 transformer_dir.mkdir(parents=True, exist_ok=True)
 
                 logger.info(f"Saving transformer to {transformer_dir}")
+
+                if self.use_lora:
+                    # Fail loudly here rather than at eval time.
+                    expected = set(self.base_state_dict_keys)
+                    if set(state_dict_bf16) != expected:
+                        raise RuntimeError(
+                            "merged state dict key set differs from the "
+                            "un-adapted model: "
+                            f"{sorted(set(state_dict_bf16) ^ expected)[:8]}")
+                    save_file(
+                        {k: v.to(torch.bfloat16) for k, v in adapter_state.items()},
+                        transformer_dir / "lora_weights.safetensors")
+                    with open(transformer_dir / "lora_config.json", 'w') as f:
+                        json.dump({
+                            'rank': self.config.lora_rank,
+                            'alpha': self.config.lora_alpha,
+                            'dropout': self.config.lora_dropout,
+                            'target_modules': list(self.config.lora_target_modules),
+                            'full_train_modules': list(self.full_train_prefixes),
+                            'step': self.step,
+                        }, f, indent=2)
 
                 # Manually save in diffusers format (outside FSDP context to avoid deadlock)
                 # Save model weights
