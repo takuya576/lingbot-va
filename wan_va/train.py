@@ -36,6 +36,7 @@ from modules.utils import (
 from modules.lora import (
     count_parameters,
     inject_lora,
+    load_lora_state_dict,
     lora_scaling_map,
     lora_state_dict,
     merge_lora_state_dict,
@@ -84,12 +85,26 @@ class Trainer:
         # Load and shard transformer with FSDP
         logger.info("Loading transformer...")
 
-        if hasattr(config, 'resume_from') and config.resume_from:
-            transformer_path = os.path.join(config.resume_from, 'transformer')
+        self.use_lora = getattr(config, 'use_lora', False)
+        resume_from = getattr(config, 'resume_from', None) or None
+        # LoRA resume must load the *un-adapted* pretrained base and overlay
+        # lora_weights.safetensors. The merged diffusion_pytorch_model already
+        # has adapters folded into W; injecting a new LoRA on top of it would
+        # double-count the update.
+        if self.use_lora:
+            transformer_path = os.path.join(
+                config.wan22_pretrained_model_name_or_path, 'transformer')
+            if resume_from and config.rank == 0:
+                logger.info(
+                    f"LoRA resume: base={transformer_path}, "
+                    f"adapter dir={resume_from}")
+        elif resume_from:
+            transformer_path = os.path.join(resume_from, 'transformer')
             if config.rank == 0:
                 logger.info(f"Resuming from checkpoint: {transformer_path}")
         else:
-            transformer_path = os.path.join(config.wan22_pretrained_model_name_or_path, 'transformer')
+            transformer_path = os.path.join(
+                config.wan22_pretrained_model_name_or_path, 'transformer')
 
         self.transformer = load_transformer(
             transformer_path,
@@ -101,7 +116,6 @@ class Trainer:
         # LoRA must be injected after from_pretrained but before apply_ac (which
         # rewrites module paths) and before shard_model (which turns parameters
         # into DTensors).
-        self.use_lora = getattr(config, 'use_lora', False)
         self.lora_scaling_map = None
         self.full_train_prefixes = []
         # Captured pre-injection, so save_checkpoint can assert the merged
@@ -143,6 +157,12 @@ class Trainer:
                     "some ranks. Prefer a rank >= world_size.")
             logger.info(f"LoRA injected into {len(matched)} modules "
                         f"(rank={config.lora_rank}, alpha={config.lora_alpha})")
+            if resume_from:
+                self._load_lora_adapter(resume_from)
+                if self.step >= config.num_steps and config.rank == 0:
+                    logger.warning(
+                        f"resume step {self.step} >= num_steps "
+                        f"{config.num_steps}; raise num_steps to continue")
 
         logger.info("Setting up activation checkpointing ...")
         apply_ac(self.transformer)
@@ -180,8 +200,22 @@ class Trainer:
             foreach=False,
         )
 
-        self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, 
-            lr_lambda=lambda step: warmup_constant_lambda(step, warmup_steps=config.warmup_steps))
+        # LRScheduler only seeds 'initial_lr' itself when last_epoch == -1; with
+        # any other value it demands the group already carry it. A resumed run
+        # builds a fresh optimizer, so seed it here or the constructor below
+        # raises KeyError.
+        if self.step > 0:
+            for group in self.optimizer.param_groups:
+                group.setdefault('initial_lr', config.learning_rate)
+
+        # last_epoch=step-1 so the constructor's initial step() lands on
+        # self.step (0 when not resuming). Otherwise warmup would restart.
+        self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+            self.optimizer,
+            lr_lambda=lambda step: warmup_constant_lambda(
+                step, warmup_steps=config.warmup_steps),
+            last_epoch=self.step - 1,
+        )
 
         # Setup dataloaders
         logger.info("Setting up datasets...")
@@ -412,10 +446,8 @@ class Trainer:
             if self.config.rank == 0:
                 adapter_state = None
                 if self.use_lora:
-                    # Keep the adapter separately (it is what makes resume
-                    # possible), then fold it into the base weights so the saved
-                    # checkpoint has exactly the key set the inference server
-                    # already loads.
+                    # Adapter file is what makes resume possible (overlay on the
+                    # original base). The merged safetensors is for inference.
                     adapter_state = lora_state_dict(
                         state_dict,
                         extra_prefixes=tuple(self.full_train_prefixes))
@@ -443,8 +475,10 @@ class Trainer:
                             "merged state dict key set differs from the "
                             "un-adapted model: "
                             f"{sorted(set(state_dict_bf16) ^ expected)[:8]}")
+                    # Keep fp32 master weights: these are what resume reloads.
                     save_file(
-                        {k: v.to(torch.bfloat16) for k, v in adapter_state.items()},
+                        {k: v.detach().float().contiguous()
+                         for k, v in adapter_state.items()},
                         transformer_dir / "lora_weights.safetensors")
                     with open(transformer_dir / "lora_config.json", 'w') as f:
                         json.dump({
@@ -491,6 +525,60 @@ class Trainer:
             # Ensure all processes stay synchronized even on error
             if dist.is_initialized():
                 dist.barrier()
+
+    def _load_lora_adapter(self, checkpoint_dir):
+        """Overlay saved adapters onto the freshly injected model.
+
+        Must run after inject_lora / full-train unfreeze and before apply_ac.
+        All ranks read the same CPU file.
+        """
+        checkpoint_dir = Path(checkpoint_dir)
+        adapter_path = checkpoint_dir / 'transformer' / 'lora_weights.safetensors'
+        config_path = checkpoint_dir / 'transformer' / 'lora_config.json'
+        if not adapter_path.is_file():
+            raise FileNotFoundError(
+                f"LoRA resume expects {adapter_path}. The merged "
+                "diffusion_pytorch_model.safetensors already has adapters "
+                "folded in -- load the original pretrained base plus this "
+                "adapter file, not the merged weights.")
+        if config_path.is_file():
+            with open(config_path, 'r') as f:
+                lora_cfg = json.load(f)
+            mismatches = []
+            if lora_cfg.get('rank') != self.config.lora_rank:
+                mismatches.append(
+                    f"rank {lora_cfg.get('rank')} vs {self.config.lora_rank}")
+            if lora_cfg.get('alpha') != self.config.lora_alpha:
+                mismatches.append(
+                    f"alpha {lora_cfg.get('alpha')} vs {self.config.lora_alpha}")
+            saved_targets = list(lora_cfg.get('target_modules', []))
+            if saved_targets and saved_targets != list(self.config.lora_target_modules):
+                mismatches.append('target_modules differ')
+            saved_full = list(lora_cfg.get('full_train_modules', []))
+            if set(saved_full) != set(self.full_train_prefixes):
+                mismatches.append(
+                    f"full_train_modules {saved_full} vs {self.full_train_prefixes}")
+            if mismatches:
+                raise ValueError(
+                    "lora_config.json does not match this run: "
+                    + '; '.join(mismatches))
+            self.step = int(lora_cfg.get('step', 0))
+        else:
+            if self.config.rank == 0:
+                logger.warning(
+                    f"No lora_config.json at {config_path}; "
+                    "loading weights but leaving step at 0")
+
+        adapter_state = load_file(str(adapter_path), device='cpu')
+        load_lora_state_dict(
+            self.transformer,
+            adapter_state,
+            extra_prefixes=tuple(self.full_train_prefixes),
+        )
+        if self.config.rank == 0:
+            logger.info(
+                f"Loaded LoRA adapter from {adapter_path} "
+                f"({len(adapter_state)} tensors, resume step={self.step})")
 
     def _load_training_state(self, checkpoint_path):
         """Load training state (optimizer + step) after FSDP and optimizer creation."""
@@ -623,6 +711,8 @@ def run(args):
 
     if args.save_root is not None:
         config.save_root = args.save_root
+    if args.resume_from is not None:
+        config.resume_from = args.resume_from
 
     if rank == 0:
         logger.info(f"Using config: {args.config_name}")
@@ -646,6 +736,14 @@ def main():
         type=str,
         default=None,
         help="Root directory for saving checkpoints",
+    )
+    parser.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        help="Checkpoint dir (parent of transformer/) to resume from. "
+             "For LoRA this must contain transformer/lora_weights.safetensors; "
+             "the un-adapted pretrained base is still loaded from the config.",
     )
 
     args = parser.parse_args()

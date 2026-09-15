@@ -63,7 +63,7 @@ def main():
     torch.cuda.set_device(local_rank)
     dist.init_process_group('nccl', rank=rank, world_size=world_size)
     device = torch.device(f'cuda:{local_rank}')
-    cfg = VA_CONFIGS['robotwin_lora_train']
+    cfg = VA_CONFIGS['yam_lora_train']
 
     torch.manual_seed(0)
     # Mimic load_transformer(torch_dtype=bfloat16): build in bf16, then force

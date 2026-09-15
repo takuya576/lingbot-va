@@ -23,6 +23,7 @@ __all__ = [
     'inject_lora',
     'lora_scaling_map',
     'lora_state_dict',
+    'load_lora_state_dict',
     'merge_lora_state_dict',
     'count_parameters',
     'is_lora_key',
@@ -195,18 +196,59 @@ def is_lora_key(key):
     return '.lora_A.' in key or '.lora_B.' in key
 
 
+def _is_adapter_or_extra_key(key, extra_prefixes=()):
+    return is_lora_key(key) or any(
+        key == p or key.startswith(p + '.') for p in extra_prefixes)
+
+
 def lora_state_dict(state_dict, extra_prefixes=()):
     """Subset of `state_dict` holding the adapter (plus any `extra_prefixes`).
 
     `extra_prefixes` is for fully-trained modules that must travel with the
     adapter, e.g. ``('action_embedder', 'action_proj_out')``.
     """
-    out = {}
-    for key, value in state_dict.items():
-        if is_lora_key(key) or any(
-                key == p or key.startswith(p + '.') for p in extra_prefixes):
-            out[key] = value
-    return out
+    extra_prefixes = tuple(extra_prefixes)
+    return {
+        key: value
+        for key, value in state_dict.items()
+        if _is_adapter_or_extra_key(key, extra_prefixes)
+    }
+
+
+def load_lora_state_dict(model, adapter_state, extra_prefixes=()):
+    """Copy adapter (+ fully-trained extras) into `model`.
+
+    Call after ``inject_lora`` and unfreezing ``extra_prefixes``, and *before*
+    ``apply_ac`` / ``shard_model``. Does not touch the frozen base weights, so
+    the loaded base must be the original un-adapted checkpoint -- not a merged
+    one, which would double-count the folded update.
+    """
+    extra_prefixes = tuple(extra_prefixes)
+    live = model.state_dict()
+    missing_in_model = sorted(k for k in adapter_state if k not in live)
+    if missing_in_model:
+        raise KeyError(
+            "adapter has keys the model does not (inject_lora first, and "
+            "extra_prefixes must match the checkpoint's full_train_modules): "
+            f"{missing_in_model[:8]}")
+
+    expected = {k for k in live if _is_adapter_or_extra_key(k, extra_prefixes)}
+    missing_in_adapter = sorted(k for k in expected if k not in adapter_state)
+    if missing_in_adapter:
+        raise KeyError(
+            "checkpoint is missing adapter keys: "
+            f"{missing_in_adapter[:8]}")
+    unexpected = sorted(k for k in adapter_state if k not in expected)
+    if unexpected:
+        raise KeyError(
+            "checkpoint has keys that are not LoRA adapters or extra_prefixes: "
+            f"{unexpected[:8]}")
+
+    to_load = {}
+    for key, value in adapter_state.items():
+        target = live[key]
+        to_load[key] = value.to(device=target.device, dtype=target.dtype)
+    return model.load_state_dict(to_load, strict=False)
 
 
 def merge_lora_state_dict(state_dict, scaling_map):
