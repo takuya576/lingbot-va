@@ -10,3 +10,4 @@ Pretrained_models/
 wandb/
 *.out
 example/*/real/
+eval_out/

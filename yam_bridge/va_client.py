@@ -84,18 +84,27 @@ class VAClient:
         self.prompt = prompt
         self._call(dict(reset=True, prompt=prompt))
 
-    def infer(self, obs: Dict[str, np.ndarray]) -> np.ndarray:
+    def infer(self, obs: Dict[str, np.ndarray], want_video: bool = False):
         """Predict the next action chunk. Returns `(16, frame_chunk_size, action_per_frame)`.
 
         `obs` is only consumed while `frame_st_id == 0`, i.e. on the first call after a
         reset; later calls ignore it. Passing the same initial observation every time is
         what the reference clients do.
+
+        With `want_video`, also returns the VAE-decoded chunk the world model imagined --
+        the composite T-shape canvas, float in [0, 1]. It costs a VAE decode server-side,
+        so it is off by default, but it is the clearest check that the observation
+        pipeline is right: a mis-tiled or wrongly-ordered mosaic is obvious on sight.
         """
-        out = self._call(dict(obs=obs, prompt=self.prompt))
-        action = out["action"]
+        out = self._call(dict(obs=obs, prompt=self.prompt,
+                              save_visualization=bool(want_video)))
         # msgpack hands back arrays backed by the receive buffer, so they are read-only
         # and non-owning; the converter and the caller both want a normal array.
-        return np.array(action, dtype=np.float64, copy=True)
+        action = np.array(out["action"], dtype=np.float64, copy=True)
+        if not want_video:
+            return action
+        video = out.get("video")
+        return action, (None if video is None else np.array(video, copy=True))
 
     def advance(self, keyframes: List[Dict[str, np.ndarray]],
                 action: np.ndarray) -> None:
