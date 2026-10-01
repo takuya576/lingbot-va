@@ -57,7 +57,7 @@ def quantize_roundtrip(actions: np.ndarray, q01: np.ndarray, q99: np.ndarray) ->
 def load_norm_stat(dataset_root: str) -> tuple:
     """Load the 16 used channels of q01/q99 from the converter's norm_stat.json.
 
-    Read from the dataset rather than `va_yam_lora_train_cfg` on purpose: the config
+    Read from the dataset rather than `va_yam_cover_blocks_train_cfg` on purpose: the config
     lives under `wan_va/`, whose `__init__` imports the whole training stack. The
     config's values are pasted from this file, so they are the same numbers.
     """

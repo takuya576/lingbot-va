@@ -23,7 +23,7 @@ Usage:
     conda activate lingbot-va
     python script/extract_va_latents.py \
         --dataset-path Datasets/yam-real-world-lingbot-va/cover_blocks \
-        --config-name yam_lora_train
+        --config-name yam_cover_blocks_train
 """
 import argparse
 import json
@@ -101,10 +101,11 @@ def main():
     ap.add_argument("--dataset-path", required=True,
                      help="Path to the converted per-task dataset, e.g. "
                           "Datasets/yam-real-world-lingbot-va/cover_blocks")
-    ap.add_argument("--config-name", default="yam_lora_train",
+    ap.add_argument("--config-name", default="yam_cover_blocks_train",
                      help="wan_va config to source wan22_pretrained_model_name_or_path, "
                           "height/width, obs_cam_keys, env_type from")
-    ap.add_argument("--target-fps", type=int, default=5,
+    sampling = ap.add_mutually_exclusive_group()
+    sampling.add_argument("--target-fps", type=int,
                      help="Sampling fps for latent extraction; the actual frame stride "
                           "is round(ori_fps/target_fps), so 5 on 30fps source = stride "
                           "6. This is the lever that trades temporal resolution against "
@@ -113,7 +114,18 @@ def main():
                           "5-15fps range the repo README sanctions) is what lets a "
                           "whole 40-70s cover_blocks episode fit in one segment, so "
                           "every training sample is anchored at episode frame 0 -- the "
-                          "same anchor the deployment client holds for a whole rollout.")
+                          "same anchor the deployment client holds for a whole rollout. "
+                          "Defaults to 5 when neither this nor --stride is given.")
+    sampling.add_argument("--stride", type=int,
+                     help="The frame stride, given directly instead of via --target-fps. "
+                          "Use this when the stride you want is not round(ori_fps/int): "
+                          "stride 4 on a 30fps source is 7.5fps, which --target-fps "
+                          "cannot express, and --target-fps 8 would stamp a wrong "
+                          "'fps': 8 into every .pth. The effective fps recorded is "
+                          "ori_fps/stride. Note the invariant this fixes downstream: "
+                          "action_per_frame == 4*stride in the serving config, since "
+                          "_action_post_process packs 4*frame_stride raw actions per "
+                          "latent frame (lerobot_latent_dataset.py:264-271).")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--dtype", default="bfloat16", choices=["bfloat16", "float16", "float32"])
     ap.add_argument("--overwrite", action="store_true")
@@ -136,7 +148,16 @@ def main():
     with open(os.path.join(args.dataset_path, "meta", "info.json")) as f:
         info = json.load(f)
     ori_fps = info["fps"]
-    stride = max(1, round(ori_fps / args.target_fps))
+    if args.stride is not None:
+        assert args.stride >= 1, "--stride must be >= 1"
+        stride = args.stride
+    else:
+        stride = max(1, round(ori_fps / (args.target_fps or 5)))
+    # Recorded rather than echoed back: --target-fps 8 on a 30fps source really samples
+    # at 7.5, and the .pth should say what was done, not what was asked for.
+    target_fps = ori_fps / stride
+    print(f"[sampling] ori_fps={ori_fps} stride={stride} -> {target_fps}fps "
+          f"(action_per_frame must be {4 * stride})")
 
     with open(os.path.join(args.dataset_path, "meta", "episodes.jsonl")) as f:
         episodes = [json.loads(l) for l in f]
@@ -189,7 +210,7 @@ def main():
                     "frame_ids": frame_ids,
                     "start_frame": start_frame,
                     "end_frame": end_frame,
-                    "fps": args.target_fps,
+                    "fps": target_fps,
                     "ori_fps": ori_fps,
                 }, out_path)
 

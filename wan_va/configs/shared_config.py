@@ -22,7 +22,7 @@ va_shared_cfg.enable_offload = False
 va_shared_cfg.base_param_dtype = torch.float32
 va_shared_cfg.use_lora = False
 va_shared_cfg.lora_rank = 32
-va_shared_cfg.lora_alpha = 32
+va_shared_cfg.lora_alpha = 64
 va_shared_cfg.lora_dropout = 0.0
 # Modules that get a low-rank adapter. Matched as suffixes of the module path.
 va_shared_cfg.lora_target_modules = [
@@ -47,3 +47,17 @@ va_shared_cfg.full_train_action_cond_embedder = False
 # Skip training samples whose packed sequence exceeds this many tokens, to bound
 # activation memory. None disables the guard.
 va_shared_cfg.max_seq_len = None
+
+# Train on only these episodes; None (the default) means all of them. This is the
+# repo's only train/val split mechanism -- there is no validation loop, and the
+# `splits` field lerobot writes into meta/info.json is read by nothing.
+#
+# Values are ABSOLUTE `episode_index` values as they appear in meta/episodes.jsonl,
+# not positions, and they need not be contiguous. Held-out episodes keep their
+# parquet rows, videos and cached latents on disk; they are simply never sampled,
+# so an offline evaluator (script/eval_yam_openloop.py) can still read them.
+#
+# The filter applies to EVERY repo discovered under dataset_path, which is only
+# unambiguous because a per-task config points dataset_path at a single task
+# directory. Do not set this on a config whose dataset_path spans several tasks.
+va_shared_cfg.episode_subset = None

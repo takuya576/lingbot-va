@@ -22,6 +22,7 @@ from distributed.fsdp import shard_model
 from distributed.util import _configure_model, init_distributed
 from modules.utils import (
     WanVAEStreamingWrapper,
+    WanVAEStreamingDecoder,
     load_text_encoder,
     load_tokenizer,
     load_transformer,
@@ -65,6 +66,16 @@ class VA_Server:
             torch_device='cpu' if self.enable_offload else self.device,
         )
         self.streaming_vae = WanVAEStreamingWrapper(self.vae)
+        # Decoder-side counterpart, so the imagined video is one continuous
+        # stream rather than a cold 5-frame restart per chunk. Costs a constant
+        # ~418 MiB of causal-conv cache; see WanVAEStreamingDecoder.
+        self.streaming_decoder = WanVAEStreamingDecoder(self.vae)
+        # Also set in _reset; initialised here so any path that reaches
+        # _compute_kv_cache without a preceding reset does not AttributeError.
+        self._video_stream_active = False
+        self.last_video_gen_ms = 0.0
+        self.last_action_gen_ms = 0.0
+        self.last_real_decode_ms = 0.0
         self.video_processor = VideoProcessor(vae_scale_factor=1)
 
         self.tokenizer = load_tokenizer(
@@ -384,6 +395,13 @@ class VA_Server:
         #### clean vae and transformer cache
         self.transformer.clear_cache(self.cache_name)
         self.streaming_vae.clear_cache()
+        self.streaming_decoder.clear_cache()
+        # Advancing the decoder's real stream costs a second VAE decode per chunk, so
+        # it is only done once a client has actually asked for video.
+        self._video_stream_active = False
+        self.last_video_gen_ms = 0.0
+        self.last_action_gen_ms = 0.0
+        self.last_real_decode_ms = 0.0
 
         self.action_per_frame = self.job_config.action_per_frame
         self.height, self.width = self.job_config.height, self.job_config.width
@@ -487,6 +505,14 @@ class VA_Server:
                 torch.no_grad(),
         ):
             # 1. Video Generation Loop
+            # Timed separately from the action loop below. They are different models'
+            # worth of work under two independent knobs -- num_inference_steps and
+            # action_num_inference_steps -- and lumping them into one "infer" number
+            # hides which of the two a latency change came from. Note this loop runs
+            # even when no video was requested: the action loop attends to the latents
+            # it produces, so it is not optional work.
+            torch.cuda.synchronize()
+            t_vgen = time.perf_counter()
             for i, t in enumerate(tqdm(timesteps)):
                 last_step = i == len(timesteps) - 1
                 latent_cond = init_latent[:, :, 0:1].to(
@@ -522,6 +548,10 @@ class VA_Server:
 
                 latents[:, :, 0:1] = latent_cond if frame_st_id == 0 else latents[:, :, 0:1]
 
+            # 2. Action Generation Loop
+            torch.cuda.synchronize()
+            self.last_video_gen_ms = (time.perf_counter() - t_vgen) * 1e3
+            t_agen = time.perf_counter()
             for i, t in enumerate(tqdm(action_timesteps)):
                 last_step = i == len(action_timesteps) - 1
                 action_cond = torch.zeros(
@@ -561,6 +591,9 @@ class VA_Server:
 
                 actions[:, :, 0:1] = action_cond if frame_st_id == 0 else actions[:, :, 0:1]
 
+            torch.cuda.synchronize()
+            self.last_action_gen_ms = (time.perf_counter() - t_agen) * 1e3
+
         actions[:, ~self.action_mask] *= 0
 
         save_async(latents, os.path.join(self.exp_save_root, f'latents_{frame_st_id}.pt'))
@@ -579,6 +612,25 @@ class VA_Server:
             latent_model_input = torch.cat(
                 [self.init_latent, latent_model_input],
                 dim=2) if latent_model_input is not None else self.init_latent
+
+        self.last_real_decode_ms = 0.0
+        if self._video_stream_active:
+            # The second decode per chunk, and the reason the video is honest: this
+            # advances the decoder's causal cache with what the robot ACTUALLY saw, so
+            # the next chunk's imagined frames are rendered as a continuation of reality
+            # -- the same history the transformer is conditioned on, since the
+            # clear_pred_cache above just evicted the previous chunk's prediction. The
+            # pixels are thrown away; the cache side effect is the whole point.
+            #
+            # Timed and reported so it lands in the client's `vid` rather than in `adv`.
+            # It exists only because --video is on, and leaving it inside the advance
+            # would make "refresh the KV cache with the real observation" mean two
+            # different things depending on a flag.
+            torch.cuda.synchronize()
+            t_rdec = time.perf_counter()
+            self.streaming_decoder.decode_chunk(latent_model_input)
+            torch.cuda.synchronize()
+            self.last_real_decode_ms = (time.perf_counter() - t_rdec) * 1e3
 
         action_model_input = self.preprocess_action(obs['state'])
         action_model_input = action_model_input.to(latent_model_input)
@@ -618,18 +670,80 @@ class VA_Server:
             logger.info(
                 f"################# Compute KV Cache #################")
             self._compute_kv_cache(obs)
-            return dict()
+            return dict(real_decode_ms=self.last_real_decode_ms)
         else:
             logger.info(f"################# Infer One Chunk #################")
             save_visualization = obs.get('save_visualization', False)
             action, latents = self._infer(obs, frame_st_id=self.frame_st_id)
-            out = dict(action=action)
+            # Split so the client can attribute latency to a knob rather than to
+            # "inference": video_gen is num_inference_steps, action_gen is
+            # action_num_inference_steps, and video_decode (below) is the optional VAE.
+            out = dict(action=action,
+                       video_gen_ms=self.last_video_gen_ms,
+                       action_gen_ms=self.last_action_gen_ms)
             if save_visualization:
-                video = self.decode_one_video(latents, output_type='np')
+                # Reported separately so the client is not left calling a VAE decode
+                # "inference". This is the IMAGINED half; its real-stream counterpart is
+                # timed in _compute_kv_cache and reported from there. Folding either into
+                # the surrounding stage would silently inflate a latency that is supposed
+                # to be independent of --video.
+                t_dec = time.perf_counter()
+                video = self.decode_streaming_video(latents, output_type='np')
+                out['video_decode_ms'] = (time.perf_counter() - t_dec) * 1e3
                 out['video'] = video[0] if hasattr(video, 'shape') and video.ndim == 5 else video
             return out
+
+    def decode_streaming_video(self, latents, output_type):
+        """Decode this chunk's imagined latents as a continuation of the REAL past.
+
+        Two things are going on here.
+
+        First, continuity. `decode_one_video` restarts the decoder cold every call, and
+        a cold start costs temporal resolution -- the first latent frame of a call
+        expands to 1 pixel frame instead of 4 -- so every chunk came out as a
+        disconnected 5-frame clip. Carrying the decoder's causal-conv cache across
+        chunks gives 5 frames for the first chunk and 8 for each one after.
+
+        Second, and less obvious: the cache is fed by the REAL observation latents, not
+        by the imagined ones, and each chunk decodes against a *fork* of it. That is
+        because the model's own context is real-observation-only. `_infer` commits its
+        predictions as `is_pred` (:511), and the first thing `_compute_kv_cache` does is
+        `clear_pred_cache` (:581) -- evicting them before writing the real camera
+        latents for the *same* frame positions. So the model is teacher-forced on
+        reality and imagines exactly one chunk ahead. Warming the decoder on the
+        previous chunk's imagination would render each chunk as a continuation of a
+        pixel history the model never conditioned on. Measured, that shifts pixels by
+        ~0.5-1.3% of range on average (locally up to half of full scale), bounded rather
+        than compounding because the causal cache is only 2 frames deep -- small, but
+        wrong, and this video exists precisely to be compared against reality.
+
+        Falls back to a cold decode if the caller skipped a chunk: the cache is "the
+        video so far", so decoding a non-adjacent chunk against it would splice two
+        distant moments into one smooth shot -- motion that never happened, with nothing
+        in the picture to reveal it. Only reachable by requesting video on some chunks
+        and not others, which neither shipped client does, so it is reported rather than
+        silently patched over.
+        """
+        self._video_stream_active = True
+        expected = self.streaming_decoder.frames_done
+        if expected and expected != self.frame_st_id:
+            logger.warning(
+                f"streaming decode gap: cache holds {expected} real latent frames but "
+                f"this chunk starts at {self.frame_st_id}; decoding it cold. Request "
+                "video on every chunk to keep the video continuous.")
+            self.streaming_decoder.clear_cache()
+        # Fork, not the stream itself: these imagined latents sit at the same frame
+        # positions the real observations are about to occupy, and the real ones are
+        # what the stream must carry forward.
+        video = self.streaming_decoder.fork().decode_chunk(latents)
+        return self.video_processor.postprocess_video(video, output_type=output_type)
     
     def decode_one_video(self, latents, output_type):
+        # Cold, whole-sequence decode. Still correct for the offline `generate()` path
+        # below: that loop never calls _compute_kv_cache, so nothing ever evicts the
+        # is_pred entries and the model really does dream on its own imagination there.
+        # An imagination-continuing decode is the right rendering of an imagined-context
+        # rollout -- which is exactly why the server path needs the other one.
         latents = latents.to(self.vae.dtype)
         latents_mean = (
             torch.tensor(self.vae.config.latents_mean)

@@ -11,7 +11,7 @@ arm's MuJoCo model from the i2rt project (vendored as a submodule in the user's
 VAE latents (see script/extract_va_latents.py for that, run separately in the
 lingbot-va torch env).
 
-Run in a lightweight env with: numpy, scipy, pandas, pyarrow, mujoco==3.3.5, mink>=0.0.13
+Run in a lightweight env with: numpy, scipy, pyarrow, mujoco==3.3.5, mink>=0.0.13
 (no torch needed). Requires the i2rt submodule checked out:
     cd <raiden_repo> && git submodule update --init third_party/i2rt
 
@@ -29,7 +29,6 @@ import sys
 from copy import deepcopy
 
 import numpy as np
-import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from scipy.spatial.transform import Rotation as R
@@ -95,21 +94,49 @@ def make_chunks(length: int, chunk_frames: int, min_chunk_frames: int) -> list:
     return list(zip(starts, ends))
 
 
-def write_parquet(dst_path: str, df: pd.DataFrame, state16: np.ndarray, action16: np.ndarray):
-    n = len(df)
+def read_list_column(table: pa.Table, column: str) -> np.ndarray:
+    """Read one FixedSizeList column of a LeRobot parquet as (N, D) float32.
+
+    Same access pattern as script/validate_yam_action_convert.py's `read_column`.
+    """
+    return np.stack(
+        table.column(column).to_numpy(zero_copy_only=False)).astype(np.float32)
+
+
+def write_parquet(dst_path: str, src_table: pa.Table, state16: np.ndarray,
+                   action16: np.ndarray):
+    """Rewrite one episode with 16-dim EEF state/action, scalar columns carried over."""
     table = pa.Table.from_pydict({
         "observation.state": pa.FixedSizeListArray.from_arrays(
             pa.array(state16.reshape(-1), type=pa.float32()), 16),
         "action": pa.FixedSizeListArray.from_arrays(
             pa.array(action16.reshape(-1), type=pa.float32()), 16),
-        "timestamp": pa.array(df["timestamp"].to_numpy(), type=pa.float32()),
-        "frame_index": pa.array(df["frame_index"].to_numpy(), type=pa.int64()),
-        "episode_index": pa.array(df["episode_index"].to_numpy(), type=pa.int64()),
-        "index": pa.array(df["index"].to_numpy(), type=pa.int64()),
-        "task_index": pa.array(df["task_index"].to_numpy(), type=pa.int64()),
+        "timestamp": src_table.column("timestamp").cast(pa.float32()),
+        "frame_index": src_table.column("frame_index").cast(pa.int64()),
+        "episode_index": src_table.column("episode_index").cast(pa.int64()),
+        "index": src_table.column("index").cast(pa.int64()),
+        "task_index": src_table.column("task_index").cast(pa.int64()),
     })
-    assert table.num_rows == n
+    assert table.num_rows == src_table.num_rows
     pq.write_table(table, dst_path)
+
+
+def parse_episode_spec(spec: str) -> set:
+    """'0-49' / '0-9,20,30-32' -> a set of episode indices. None -> None (all)."""
+    if spec is None:
+        return None
+    out = set()
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            lo, hi = part.split("-", 1)
+            out.update(range(int(lo), int(hi) + 1))  # inclusive, as written
+        else:
+            out.add(int(part))
+    assert out, f"--norm-stat-episodes {spec!r} selected no episodes"
+    return out
 
 
 def col_stats(arr: np.ndarray) -> dict:
@@ -142,13 +169,23 @@ def main():
                           "where k+1 = ((seg_frames-1)//stride)//4 + 1, and stride = "
                           "ori_fps/target_fps from script/extract_va_latents.py. At "
                           "5fps (stride 6) the longest cover_blocks episode is 26496 "
-                          "tokens, hence max_seq_len=26624 in va_yam_lora_train_cfg.")
+                          "tokens, hence max_seq_len=26624 in va_yam_cover_blocks_train_cfg.")
     ap.add_argument("--min-chunk-frames", type=int, default=100,
                      help="Only used when --chunk-frames > 0: a trailing remainder "
                           "shorter than this is merged into the previous chunk "
                           "instead of forming its own tiny segment. Worst-case "
                           "segment length is then chunk_frames+min_chunk_frames-1, "
                           "which must still fit max_seq_len.")
+    ap.add_argument("--norm-stat-episodes", default=None, metavar="SPEC",
+                     help="Restrict which episodes the q01/q99 fit is computed over, "
+                          "e.g. '0-49' or '0-9,20,30-32'. Every episode is still "
+                          "converted and written; only step 7's quantile fit is "
+                          "narrowed. Set this to the training split whenever the "
+                          "dataset has held-out episodes: norm_stat fitted over data "
+                          "the model never sees leaks the held-out action range into "
+                          "the normalization, and the clip bounds it produces are not "
+                          "the ones the training distribution implies. Must match the "
+                          "`episode_subset` of the config that trains on this dataset.")
     args = ap.parse_args()
 
     src, dst = args.src, args.dst
@@ -176,6 +213,15 @@ def main():
             d = json.loads(line)
             src_stats_by_ep[d["episode_index"]] = d
 
+    norm_stat_episodes = parse_episode_spec(args.norm_stat_episodes)
+    if norm_stat_episodes is not None:
+        present = {e["episode_index"] for e in src_episodes}
+        missing = sorted(norm_stat_episodes - present)
+        assert not missing, f"--norm-stat-episodes names absent episodes: {missing}"
+        fit = sorted(norm_stat_episodes)
+        print(f"[norm_stat] fitting q01/q99 on {len(fit)} of {len(present)} episodes "
+              f"({fit[0]}..{fit[-1]}); the rest are converted but held out of the fit")
+
     new_episodes = []
     new_stats_lines = []
     all_rel_actions = []
@@ -184,15 +230,16 @@ def main():
         idx = ep["episode_index"]
         length = ep["length"]
         fname = f"episode_{idx:06d}.parquet"
-        df = pd.read_parquet(os.path.join(src, "data", "chunk-000", fname))
-        assert len(df) == length
+        src_table = pq.read_table(os.path.join(src, "data", "chunk-000", fname))
+        assert src_table.num_rows == length
 
-        state14 = np.stack(df["observation.state"].to_numpy()).astype(np.float32)
-        action14 = np.stack(df["action"].to_numpy()).astype(np.float32)
+        state14 = read_list_column(src_table, "observation.state")
+        action14 = read_list_column(src_table, "action")
         state16 = joints14_to_eef16(state14, fk)
         action16 = joints14_to_eef16(action14, fk)
 
-        write_parquet(os.path.join(dst, "data", "chunk-000", fname), df, state16, action16)
+        write_parquet(os.path.join(dst, "data", "chunk-000", fname), src_table,
+                      state16, action16)
 
         task_text = ep["tasks"][0]
         chunks = make_chunks(length, args.chunk_frames, args.min_chunk_frames)
@@ -207,7 +254,8 @@ def main():
             # norm_stat must be computed on the relative-pose-transformed action
             # PER SEGMENT (relative to that segment's own first frame), since that's
             # what _action_post_process applies before normalization.
-            all_rel_actions.append(relativize_action16(action16[c_start:c_end]))
+            if norm_stat_episodes is None or idx in norm_stat_episodes:
+                all_rel_actions.append(relativize_action16(action16[c_start:c_end]))
 
         new_episodes.append({
             "episode_index": idx,
@@ -265,11 +313,16 @@ def main():
     q99_30[RIGHT_GRIPPER_CANON] = q99_16[15]
 
     norm_stat = {"q01": q01_30.tolist(), "q99": q99_30.tolist()}
+    # Record the fit set: which episodes these quantiles came from is not recoverable
+    # from the numbers, and a norm_stat fitted on a different split than the one
+    # trained is a mismatch nothing downstream can detect.
+    if norm_stat_episodes is not None:
+        norm_stat["fit_episodes"] = sorted(norm_stat_episodes)
     with open(os.path.join(dst, "norm_stat.json"), "w") as f:
         json.dump(norm_stat, f, indent=2)
 
-    print("\n=== norm_stat (paste into wan_va/configs/va_yam_lora_train_cfg.py) ===")
-    print("va_yam_lora_train_cfg.norm_stat = {")
+    print("\n=== norm_stat (paste into wan_va/configs/va_yam_cover_blocks_train_cfg.py) ===")
+    print("va_yam_cover_blocks_train_cfg.norm_stat = {")
     print(f"    'q01': {q01_30.tolist()},")
     print(f"    'q99': {q99_30.tolist()},")
     print("}")

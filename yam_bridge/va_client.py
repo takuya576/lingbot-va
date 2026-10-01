@@ -61,6 +61,12 @@ class VAClient:
         # Blocks until the server accepts, retrying every 5s.
         self._client = cls(host=host, port=port)
         self.prompt: Optional[str] = None
+        # Set by every infer(); see there. Initialised so a caller can read them before
+        # the first call without special-casing.
+        self.last_video_decode_ms: float = 0.0
+        self.last_video_gen_ms: float = 0.0
+        self.last_action_gen_ms: float = 0.0
+        self.last_real_decode_ms: float = 0.0   # set by advance(), not infer()
 
     def _call(self, payload: Dict) -> Dict:
         try:
@@ -95,9 +101,29 @@ class VAClient:
         the composite T-shape canvas, float in [0, 1]. It costs a VAE decode server-side,
         so it is off by default, but it is the clearest check that the observation
         pipeline is right: a mis-tiled or wrongly-ordered mosaic is obvious on sight.
+
+        After each call these hold the server's own breakdown of the round trip, so a
+        caller can attribute latency to a specific knob instead of to "inference":
+
+          last_video_gen_ms    denoising the imagined video latents (num_inference_steps).
+                               Runs even without `want_video` -- the action loop attends
+                               to the latents it produces, so it is never optional work.
+          last_action_gen_ms   denoising the action chunk (action_num_inference_steps).
+          last_video_decode_ms VAE decode of those latents into pixels. 0.0 unless
+                               `want_video`; this one really is optional, and it is the
+                               expensive one. Its twin, `last_real_decode_ms`, is set by
+                               `advance` -- see there. Together they are the full cost
+                               of --video.
+
+        All three happen inside this blocking call, so timing the round trip and calling
+        the result "inference" conflates three unrelated costs -- and turning the
+        visualisation on silently multiplies it.
         """
         out = self._call(dict(obs=obs, prompt=self.prompt,
                               save_visualization=bool(want_video)))
+        self.last_video_decode_ms = float(out.get("video_decode_ms", 0.0))
+        self.last_video_gen_ms = float(out.get("video_gen_ms", 0.0))
+        self.last_action_gen_ms = float(out.get("action_gen_ms", 0.0))
         # msgpack hands back arrays backed by the receive buffer, so they are read-only
         # and non-owning; the converter and the caller both want a normal array.
         action = np.array(out["action"], dtype=np.float64, copy=True)
@@ -116,9 +142,16 @@ class VAClient:
         array `infer` returned, not the subset actually executed: on the first chunk the
         server prepends its stored init latent so the latent stream again matches this
         array's frame axis.
+
+        Sets `self.last_real_decode_ms`: with video on, the server also decodes these
+        real latents here, to keep the imagined video continuing from reality rather
+        than from its own previous imagination. That decode is the *second* of the two
+        `--video` buys, and a caller timing this round trip must subtract it, or
+        "advance the world model" silently costs more whenever video is on.
         """
         if not keyframes or len(keyframes) % 4 != 0:
             raise ValueError(
                 f"keyframe count must be a non-zero multiple of 4, got {len(keyframes)}; "
                 "a partial list desyncs the server's streaming VAE cache")
-        self._call(dict(obs=keyframes, compute_kv_cache=True, state=action))
+        out = self._call(dict(obs=keyframes, compute_kv_cache=True, state=action))
+        self.last_real_decode_ms = float((out or {}).get("real_decode_ms", 0.0))

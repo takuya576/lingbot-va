@@ -216,6 +216,20 @@ class YamActionConverter:
         if action16.shape[0] != 16:
             raise ValueError(f"expected (16,) action, got {action16.shape}")
 
+        # Validate before composing, not after. `pose_to_matrix` has the degenerate
+        # check, but `add_eef_pose` runs first and calls `R.from_quat` on the raw
+        # model output -- scipy normalizes a non-unit quaternion silently but raises
+        # "Found zero norm quaternions" on a zero one, so the useful diagnostic never
+        # got a chance to fire. Checking here covers both arms at the boundary where
+        # model output enters.
+        for name, quat in (("left", action16[3:7]), ("right", action16[11:15])):
+            norm = float(np.linalg.norm(quat))
+            if not np.isfinite(norm) or norm < 1e-8:
+                raise ValueError(
+                    f"degenerate {name} quaternion in predicted action: {quat}. The "
+                    "model emits unnormalized regression targets, but a zero-norm one "
+                    "means the output is garbage -- check the norm stats and config.")
+
         absolute16 = add_init_pose(action16, self.anchor16)
         out = np.zeros(BIMANUAL_DOF, dtype=np.float32)
 

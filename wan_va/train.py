@@ -2,6 +2,7 @@
 import argparse
 import os
 import sys
+import time
 from pathlib import Path
 import wandb
 
@@ -63,16 +64,18 @@ class Trainer:
             wandb.login(host=os.environ['WANDB_BASE_URL'],
                         key=os.environ.get('WANDB_API_KEY'))
             self.wandb = wandb
+            # run_name is '<config_name>_<timestamp>', the same timestamp that names
+            # save_root, so a wandb run identifies its own checkpoint directory.
+            run_name = getattr(config, 'run_name', None)
             self.wandb.init(
                 entity=os.environ["WANDB_TEAM_NAME"],
                 project=os.getenv("WANDB_PROJECT", "va_robotwin"),
                 # dir=log_dir,
                 config=config,
                 mode="online",
-                name='test_lln'
-                # name=os.path.basename(os.path.normpath(job_config.job.dump_folder))
+                name=run_name,
             )
-            logger.info("WandB logging enabled")
+            logger.info(f"WandB logging enabled (run: {run_name or 'auto-named'})")
         self.step = 0
         self.config = config
         self.device = torch.device(f"cuda:{config.local_rank}")
@@ -245,14 +248,32 @@ class Trainer:
 
         self.gradient_accumulation_steps = getattr(config, 'gradient_accumulation_steps', 1)
         self.train_loader_iter = None
+
+        # Epoch bookkeeping. This loop is step-driven, so an epoch is not a unit of
+        # control -- it is only measured, as "how many times has the run seen the whole
+        # dataset". len(train_loader) is batches PER RANK (DistributedSampler splits the
+        # indices), which is the right denominator because each loop iteration pulls one
+        # batch per rank.
+        self.batches_per_epoch = len(self.train_loader)
+        # A resumed run restarts the loader at batch 0, so the epochs already trained
+        # have to be recovered from self.step rather than counted: one optimizer step
+        # consumes gradient_accumulation_steps batches per rank.
+        self.batches_consumed = self.step * self.gradient_accumulation_steps
         # if hasattr(config, 'resume_from') and config.resume_from:
         #     self._load_training_state(config.resume_from)
-    
+
+    @property
+    def epoch(self):
+        """Fractional epochs consumed: 2.5 means two full passes plus half a third."""
+        if not self.batches_per_epoch:
+            return 0.0
+        return self.batches_consumed / self.batches_per_epoch
+
     def _get_next_batch(self):
         """Get next batch from iterator, reset if epoch is finished."""
         if self.train_loader_iter is None:
             self.train_loader_iter = iter(self.train_loader)
-        
+
         try:
             batch = next(self.train_loader_iter)
         except StopIteration:
@@ -261,7 +282,8 @@ class Trainer:
                 self.train_loader.sampler.set_epoch(self.train_loader.sampler.epoch + 1)
             self.train_loader_iter = iter(self.train_loader)
             batch = next(self.train_loader_iter)
-        
+
+        self.batches_consumed += 1
         return batch
 
     @torch.no_grad()
@@ -488,6 +510,10 @@ class Trainer:
                             'target_modules': list(self.config.lora_target_modules),
                             'full_train_modules': list(self.full_train_prefixes),
                             'step': self.step,
+                            # The adapter is a delta on this exact base; resume
+                            # checks it (see _load_lora_adapter).
+                            'base_model': os.path.realpath(
+                                self.config.wan22_pretrained_model_name_or_path),
                         }, f, indent=2)
 
                 # Manually save in diffusers format (outside FSDP context to avoid deadlock)
@@ -558,6 +584,19 @@ class Trainer:
             if set(saved_full) != set(self.full_train_prefixes):
                 mismatches.append(
                     f"full_train_modules {saved_full} vs {self.full_train_prefixes}")
+            # An adapter overlaid on a different un-adapted base (e.g. a
+            # robotwin-initialized run resumed under lingbot-va-base) loads
+            # without any shape error, since both bases share one architecture.
+            saved_base = lora_cfg.get('base_model')
+            this_base = os.path.realpath(
+                self.config.wan22_pretrained_model_name_or_path)
+            if saved_base is None:
+                if self.config.rank == 0:
+                    logger.warning(
+                        f"{config_path} predates base_model tracking; cannot "
+                        f"verify the adapter was trained on {this_base}")
+            elif saved_base != this_base:
+                mismatches.append(f"base_model {saved_base} vs {this_base}")
             if mismatches:
                 raise ValueError(
                     "lora_config.json does not match this run: "
@@ -614,6 +653,17 @@ class Trainer:
     def train(self):
         """Main training loop - train by steps instead of epochs."""
         logger.info(f"Starting training for {self.config.num_steps} steps...")
+        if self.config.rank == 0:
+            steps_per_epoch = self.batches_per_epoch / self.gradient_accumulation_steps
+            total_epochs = (self.config.num_steps * self.gradient_accumulation_steps
+                            / self.batches_per_epoch) if self.batches_per_epoch else 0.
+            logger.info(
+                f"Dataset: {len(self.train_loader.dataset)} samples, "
+                f"{self.batches_per_epoch} batches/epoch/rank, "
+                f"{steps_per_epoch:.1f} optimizer steps/epoch")
+            logger.info(
+                f"{self.config.num_steps} steps covers {total_epochs:.1f} epochs "
+                f"(resuming at epoch {self.epoch:.2f})")
         self.transformer.train()
 
         progress_bar = tqdm(
@@ -668,6 +718,7 @@ class Trainer:
                         'latent_loss': f'{latent_loss_show:.4f}',
                         'action_loss': f'{action_loss_show:.4f}',
                         'step': self.step,
+                        'epoch': f'{self.epoch:.2f}',
                         'grad_norm': f'{total_norm.item():.2f}',
                         'lr': f'{lr:.2e}'
                     })
@@ -679,20 +730,45 @@ class Trainer:
                             'loss_metrics/global_max_action_loss': max_action_loss_show,
                             'grad_norm': total_norm.item(),
                             'lr': lr,
+                            'epoch': self.epoch,
                         }, step=self.step)
                 
                 self.step += 1
                 
                 if self.step % self.config.save_interval == 0:
                     if self.config.rank == 0:
-                        logger.info(f"Starting save model at step {self.step}")
+                        logger.info(f"Starting save model at step {self.step} "
+                                    f"(epoch {self.epoch:.2f})")
                     self.save_checkpoint()
 
             if dist.is_initialized():
                 dist.barrier()
 
         progress_bar.close()
-        logger.info("Training completed!")
+        logger.info(f"Training completed! {self.step} steps, "
+                    f"{self.epoch:.2f} epochs")
+
+
+def run_timestamp(local_rank):
+    """One timestamp shared by every rank of a run.
+
+    Ranks are separate processes that reach this line at slightly different
+    times, so letting each call strftime would scatter a single run's
+    checkpoints over several directories. RUN_TIMESTAMP from the environment
+    wins when set -- torchrun passes the launcher's env to every worker, so a
+    wrapper script can pin the directory name in advance -- otherwise rank 0
+    decides and broadcasts.
+    """
+    stamp = os.environ.get("RUN_TIMESTAMP")
+    if stamp:
+        return stamp
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    if dist.is_initialized():
+        holder = [stamp]
+        dist.broadcast_object_list(
+            holder, src=0, device=torch.device("cuda", local_rank))
+        stamp = holder[0]
+    return stamp
 
 
 def run(args):
@@ -711,12 +787,20 @@ def run(args):
 
     if args.save_root is not None:
         config.save_root = args.save_root
+    # Every launch gets its own dated subdirectory, e.g.
+    # train_out/yam_place_cube/20250922_143000, so a rerun cannot overwrite
+    # the checkpoints an assembled serving directory still symlinks into.
+    stamp = run_timestamp(local_rank)
+    config.save_root = os.path.join(config.save_root, stamp)
+    # Same stamp, so the wandb run name points at its own checkpoint directory.
+    config.run_name = f"{args.config_name}_{stamp}"
     if args.resume_from is not None:
         config.resume_from = args.resume_from
 
     if rank == 0:
         logger.info(f"Using config: {args.config_name}")
         logger.info(f"World size: {world_size}, Local rank: {local_rank}")
+        logger.info(f"Saving to: {config.save_root}")
 
     trainer = Trainer(config)
     trainer.train()
@@ -735,7 +819,8 @@ def main():
         "--save-root",
         type=str,
         default=None,
-        help="Root directory for saving checkpoints",
+        help="Root directory for saving checkpoints; a timestamped "
+             "subdirectory is created under it.",
     )
     parser.add_argument(
         "--resume-from",

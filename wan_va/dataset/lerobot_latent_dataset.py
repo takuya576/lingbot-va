@@ -5,6 +5,7 @@ from lerobot.datasets.compute_stats import aggregate_stats, compute_episode_stat
 import numpy as np
 from pathlib import Path
 from collections.abc import Callable
+import logging
 import os
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -14,6 +15,12 @@ from einops import rearrange
 from torch.utils.data import DataLoader
 from scipy.spatial.transform import Rotation as R
 from lerobot.constants import HF_LEROBOT_HOME
+
+# Propagates to the root logger that utils.init_logger() configures, so these records
+# land in the same stream as train.py's own INFO lines -- and therefore in the
+# archived wandb output.log.
+logger = logging.getLogger(__name__)
+
 
 def recursive_find_file(directory, filename='info.json'):
     result = []
@@ -49,7 +56,21 @@ def construct_lerobot_multi_processor(config,
     repo_list = [v.split('/meta/info.json')[0] for v in repo_list]
     with Pool(num_init_worker) as pool:
         datasets_out_lst = pool.map(construct_func, repo_list)
-                
+
+    # Reported from the PARENT on purpose. parse_meta runs in the Pool workers, and a
+    # worker's stdout/log records do not reach the parent's handlers under
+    # torch.distributed.run -- so a worker-side message is missing from exactly the
+    # archived run log that makes a split auditable after the fact. Segments are also
+    # dropped silently by _check_meta when a latent is absent, so the count that
+    # survived is worth stating whether or not a subset is configured.
+    for dset in datasets_out_lst:
+        kept = sorted({m["episode_index"] for m in dset.new_metas})
+        scope = ("all episodes" if getattr(dset, "episode_subset", None) is None
+                 else f"episode_subset of {len(dset.episode_subset)}")
+        span = f"{kept[0]}..{kept[-1]}" if kept else "NONE MATCHED"
+        logger.info(f"[dataset] {dset.repo_id}: {len(dset.new_metas)} segments from "
+                    f"{len(kept)} episodes ({span}) [{scope}]")
+
     return datasets_out_lst
 
 def get_relative_pose(pose):
@@ -148,6 +169,13 @@ class LatentLeRobotDataset(LeRobotDataset):
         self.used_video_keys = config.obs_cam_keys
         self.q01 = np.array(config.norm_stat['q01'], dtype='float')[None]
         self.q99 = np.array(config.norm_stat['q99'], dtype='float')[None]
+        # Applied in parse_meta, NOT by passing episodes=[...] to the base class.
+        # That path rebuilds episode_data_index as a *positional* table
+        # (lerobot/datasets/utils.py:497-508) while _get_global_idx indexes it by
+        # absolute episode_index -- identical for a 0..N prefix, silently off by
+        # whole episodes for any other subset. Leaving self.episodes = None keeps
+        # the full cumsum, which is correct for arbitrary subsets.
+        self.episode_subset = set(getattr(config, 'episode_subset', None) or []) or None
         self._hf_torch_view = self.hf_dataset.with_format(
                 type='torch',
                 columns=['action'],
@@ -159,6 +187,8 @@ class LatentLeRobotDataset(LeRobotDataset):
         out = []
         for key, value in self.meta.episodes.items():
             episode_index = value["episode_index"]
+            if self.episode_subset is not None and episode_index not in self.episode_subset:
+                continue
             tasks = value["tasks"]
             action_config = value["action_config"]
             for acfg in action_config:
