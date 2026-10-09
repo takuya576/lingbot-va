@@ -23,11 +23,10 @@
 #
 # checkpoint_dir defaults to the most recent checkpoint under train_out/yam_place_cube/,
 # across all timestamped runs, and out_dir to the place_cube serving directory. Serving
-# cover_blocks means passing both explicitly -- its checkpoints are under
-# train_out/yam_cover_blocks/ and its norm_stat differs, so crossing the two silently
-# denormalizes against the wrong quantiles. The same holds for place_cube_pre (the first
-# place_cube recording): train_out/yam_place_cube_pre/ ->
-# Pretrained_models/lingbot-va-posttrain-yam-place-cube-pre, both passed explicitly.
+# place_cube_pre (the first place_cube recording) means passing both explicitly -- its
+# checkpoints are under train_out/yam_place_cube_pre/ and its norm_stat differs, so
+# crossing the two silently denormalizes against the wrong quantiles:
+# train_out/yam_place_cube_pre/ -> Pretrained_models/lingbot-va-posttrain-yam-place-cube-pre.
 # And for place_cube post-trained from lingbot-va-base (yam_place_cube_base_train):
 # train_out/yam_place_cube_base/<run>/checkpoints/checkpoint_step_N ->
 # Pretrained_models/lingbot-va-posttrain-yam-place-cube-base, both passed explicitly.

@@ -438,6 +438,24 @@ class VA_Server:
                                         dtype=torch.float32).reshape(-1, 1, 1)
         self.action_norm_method = self.job_config.action_norm_method
 
+        # Latent frame 0's actions, as training builds them: _action_post_process pads
+        # frame 0 with RAW zeros and only then normalizes and clips. Normalized zeros are
+        # something else -- the midpoint of every q01..q99 range, which on YAM's one-sided
+        # relative-pose ranges reads as both arms ~18 cm into a reach, and the first chunk
+        # starts by moving both arms toward it. Always restored over frame 0 of the
+        # history fed back by the client; the first chunk's action condition only under
+        # frame0_action='train_pad' (see shared_config). The clip is needed only here,
+        # and only for EEF actions: raw zero quaternion w normalizes to -8.5, which
+        # training clips to -1.5 (joint actions' raw zeros all fall inside it). The
+        # fed-back predictions themselves are left unclipped.
+        if self.job_config.frame0_action not in ('denoised', 'train_pad'):
+            raise ValueError(f"frame0_action must be 'denoised' or 'train_pad', got "
+                             f"{self.job_config.frame0_action!r}")
+        self.frame0_pad = self.preprocess_action(
+            np.zeros((len(self.job_config.used_action_channel_ids), 1,
+                      self.action_per_frame), dtype=np.float32)).clamp(-1.5, 1.5)
+        self.frame0_pad[:, ~self.action_mask] = 0
+
         ##### get prompt
         if prompt is None:
             self.prompt_embeds = self.negative_prompt_embeds = None
@@ -554,13 +572,11 @@ class VA_Server:
             t_agen = time.perf_counter()
             for i, t in enumerate(tqdm(action_timesteps)):
                 last_step = i == len(action_timesteps) - 1
-                action_cond = torch.zeros(
-                    [
-                        1, self.job_config.action_dim, 1,
-                        self.action_per_frame, 1
-                    ],
+                action_cond = self.frame0_pad.to(
                     device=self.device,
-                    dtype=self.dtype) if frame_st_id == 0 else None
+                    dtype=self.dtype) if (
+                        frame_st_id == 0
+                        and self.job_config.frame0_action == 'train_pad') else None
 
                 input_dict = self._prepare_latent_input(
                     None,
@@ -589,7 +605,8 @@ class VA_Server:
                                                          actions,
                                                          return_dict=False)
 
-                actions[:, :, 0:1] = action_cond if frame_st_id == 0 else actions[:, :, 0:1]
+                if action_cond is not None:
+                    actions[:, :, 0:1] = action_cond
 
             torch.cuda.synchronize()
             self.last_action_gen_ms = (time.perf_counter() - t_agen) * 1e3
@@ -633,6 +650,10 @@ class VA_Server:
             self.last_real_decode_ms = (time.perf_counter() - t_rdec) * 1e3
 
         action_model_input = self.preprocess_action(obs['state'])
+        if self.frame_st_id == 0:
+            # The client hands frame 0 back after a bf16 round trip through
+            # denormalization; put back exactly what training holds there.
+            action_model_input[:, :, 0:1] = self.frame0_pad
         action_model_input = action_model_input.to(latent_model_input)
         logger.info(
             f"get KV cache obs: {latent_model_input.shape} {action_model_input.shape}"
@@ -793,12 +814,59 @@ class VA_Server:
         decoded_video = self.decode_one_video(pred_latent, 'np')[0]
         export_to_video(decoded_video, os.path.join(self.save_root, "demo.mp4"), fps=10)
 
-def run(args):    
-    
+def served_metadata(config_name, config):
+    """Who this server is, sent to every client in the websocket handshake.
+
+    A client evaluating the policy has to file its results under the checkpoint being
+    served, and the action stream alone cannot identify it: yam_place_cube and
+    yam_place_cube_base share action_per_frame and every inference setting, differing
+    only in serving directory. So the server says which config it was launched with and
+    which weights that resolved to.
+
+    `transformer_weights` is resolved through the serving directory's symlinks here, at
+    load time, so it keeps naming the checkpoint actually in memory even if the
+    directory is re-assembled while the server runs. None when the directory has no
+    single-file transformer to resolve.
+
+    `norm_stat` is the quantile fit the actions are denormalized with, which also
+    names the dataset the model was trained on: an open-loop eval compares it against
+    its --dst dataset's own norm_stat.json, so scoring one task's model against another
+    task's episodes stops rather than producing numbers.
+    """
+    serving_dir = os.path.abspath(config.wan22_pretrained_model_name_or_path)
+    weights = os.path.join(serving_dir, 'transformer',
+                           'diffusion_pytorch_model.safetensors')
+    return dict(
+        config_name=config_name,
+        serving_dir=serving_dir,
+        transformer_weights=(os.path.realpath(weights)
+                             if os.path.exists(weights) else None),
+        action_per_frame=config.action_per_frame,
+        num_inference_steps=config.num_inference_steps,
+        video_exec_step=config.video_exec_step,
+        action_num_inference_steps=config.action_num_inference_steps,
+        attn_window=config.attn_window,
+        guidance_scale=config.guidance_scale,
+        action_guidance_scale=config.action_guidance_scale,
+        # How the first chunk treats latent frame 0's action slot: 'denoised' or
+        # 'train_pad' (shared_config). Absent from servers that conditioned it on
+        # normalized zeros, which is how results from all three stay distinguishable.
+        frame0_action=config.frame0_action,
+        # 'eef' or 'joint' (shared_config.action_space): the client picks its action
+        # converter from this. Absent from older servers, all of which served 'eef'.
+        action_space=config.get('action_space', 'eef'),
+        norm_stat={k: [float(x) for x in config.norm_stat[k]] for k in ('q01', 'q99')},
+    )
+
+
+def run(args):
+
     config = VA_CONFIGS[args.config_name]
     port = config.port if args.port is None else args.port
     if args.save_root is not None:
         config.save_root = args.save_root
+    if args.frame0_action is not None:
+        config.frame0_action = args.frame0_action
     rank = int(os.getenv("RANK", 0))
     local_rank = int(os.environ.get('LOCAL_RANK', 0))
     world_size = int(os.environ.get("WORLD_SIZE", 1))
@@ -806,13 +874,16 @@ def run(args):
     config.rank = rank
     config.local_rank = local_rank
     config.world_size = world_size
+    # Taken just before the weights load, so it names what VA_Server reads.
+    metadata = served_metadata(args.config_name, config)
     model = VA_Server(config)
     if config.infer_mode == 'i2va':
         logger.info(f"******************************USE I2AV mode******************************")
         model.generate()
     elif config.infer_mode == 'server':
         logger.info(f"******************************USE Server mode******************************")
-        run_async_server_mode(model, local_rank, config.host, port)
+        logger.info(f"Serving {metadata}")
+        run_async_server_mode(model, local_rank, config.host, port, metadata=metadata)
     else:
         raise ValueError(f"Unknown infer mode: {config.infer_mode}")
 
@@ -839,6 +910,13 @@ def main():
         type=str,
         default=None,
         help='save root'
+    )
+    parser.add_argument(
+        "--frame0-action",
+        choices=['denoised', 'train_pad'],
+        default=None,
+        help="how the first chunk treats latent frame 0's action slot; overrides the "
+             "config's frame0_action (default 'denoised', see shared_config)"
     )
     args = parser.parse_args()
     run(args)

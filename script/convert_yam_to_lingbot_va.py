@@ -20,6 +20,23 @@ Usage:
         --src Datasets/yam-real-world-lerobot/cover_blocks \
         --dst Datasets/yam-real-world-lingbot-va/cover_blocks \
         --i2rt-root /data2/takuya/raiden/third_party/i2rt/i2rt
+
+`--action-space joint` instead keeps the raw 14-dim joints (no FK, so no mujoco or
+i2rt needed) and fits norm_stat on ABSOLUTE joint angles, scattered into the base
+model's joint slots -- the configs with `action_space = 'joint'` read it. Latents
+depend only on the videos and the action_config segmentation, never on actions, so
+`--latents-from` copies them from an already-extracted EEF conversion of the same
+--src instead of re-running extract_va_latents.py::
+
+    python script/convert_yam_to_lingbot_va.py --action-space joint \
+        --src Datasets/yam-real-world-lerobot/place_cube \
+        --dst Datasets/yam-real-world-lingbot-va-joint/place_cube \
+        --latents-from Datasets/yam-real-world-lingbot-va/place_cube \
+        --norm-stat-episodes 0-49
+
+Keep joint datasets OUT of Datasets/yam-real-world-lingbot-va/: a dataset_path pointed
+at that parent makes construct_lerobot_multi_processor sweep in every dataset beneath
+it.
 """
 import argparse
 import json
@@ -48,6 +65,12 @@ LEFT_EEF_CANON = slice(0, 7)
 RIGHT_EEF_CANON = slice(7, 14)
 LEFT_GRIPPER_CANON = 28
 RIGHT_GRIPPER_CANON = 29
+
+# --action-space joint: the base model's joint slots, 7 per arm. YAM has 6 arm joints,
+# so channels 20 and 27 stay unused (zero, masked out), as the base model's
+# pretraining padded every <7-DoF arm. Order matches the raw 14-dim layout's arms.
+LEFT_JOINT_CANON = slice(14, 20)
+RIGHT_JOINT_CANON = slice(21, 27)
 
 RAW16_NAMES = [
     'left_x', 'left_y', 'left_z', 'left_q1', 'left_q2', 'left_q3', 'left_q4',
@@ -103,14 +126,15 @@ def read_list_column(table: pa.Table, column: str) -> np.ndarray:
         table.column(column).to_numpy(zero_copy_only=False)).astype(np.float32)
 
 
-def write_parquet(dst_path: str, src_table: pa.Table, state16: np.ndarray,
-                   action16: np.ndarray):
-    """Rewrite one episode with 16-dim EEF state/action, scalar columns carried over."""
+def write_parquet(dst_path: str, src_table: pa.Table, state: np.ndarray,
+                   action: np.ndarray):
+    """Rewrite one episode with the given (N, D) state/action, scalar columns carried over."""
+    dim = action.shape[1]
     table = pa.Table.from_pydict({
         "observation.state": pa.FixedSizeListArray.from_arrays(
-            pa.array(state16.reshape(-1), type=pa.float32()), 16),
+            pa.array(state.reshape(-1), type=pa.float32()), dim),
         "action": pa.FixedSizeListArray.from_arrays(
-            pa.array(action16.reshape(-1), type=pa.float32()), 16),
+            pa.array(action.reshape(-1), type=pa.float32()), dim),
         "timestamp": src_table.column("timestamp").cast(pa.float32()),
         "frame_index": src_table.column("frame_index").cast(pa.int64()),
         "episode_index": src_table.column("episode_index").cast(pa.int64()),
@@ -137,6 +161,94 @@ def parse_episode_spec(spec: str) -> set:
             out.add(int(part))
     assert out, f"--norm-stat-episodes {spec!r} selected no episodes"
     return out
+
+
+def video_cameras(info: dict) -> list:
+    """The camera keys meta/info.json declares -- every segment needs a latent for each."""
+    return sorted(k for k, v in info["features"].items() if v.get("dtype") == "video")
+
+
+def latent_problems(latents_root: str, new_episodes: list, cams: list,
+                    source_root: str = None) -> list:
+    """Every expected latent file under `latents_root` that is missing -- or, with
+    `source_root`, that is the same file (inode) as its counterpart there.
+
+    Checked against `cams` from the metadata, never against the camera directories
+    actually present: a tree missing a whole camera directory would otherwise check out
+    as complete, and _check_meta would then drop every segment that needs that camera.
+    """
+    problems = []
+    for ep in new_episodes:
+        for c in ep["action_config"]:
+            name = f"episode_{ep['episode_index']:06d}_{c['start_frame']}_{c['end_frame']}.pth"
+            for cam in cams:
+                rel = os.path.join("chunk-000", cam, name)
+                path = os.path.join(latents_root, rel)
+                if not os.path.exists(path):
+                    problems.append(f"missing {rel}")
+                elif source_root is not None:
+                    src = os.path.join(source_root, rel)
+                    if os.path.exists(src) and os.path.samefile(path, src):
+                        problems.append(f"hardlinked to the source: {rel}")
+    return problems
+
+
+def copy_latents(latents_from: str, dst: str, new_episodes: list, cams: list) -> None:
+    """Copy `latents/` and `empty_emb.pt` from another conversion of the same --src.
+
+    Only valid when that conversion segmented every episode identically: the latent
+    files are keyed by (episode, start_frame, end_frame) and carry the segment's T5
+    embedding of action_text. So the action_config is compared first, and then every
+    segment's file is checked for -- _check_meta drops a segment whose latent is
+    missing without saying so, which would shrink the training set silently.
+
+    Copied, never hardlinked: extract_va_latents.py --overwrite rewrites latent files in
+    place with torch.save, so a shared inode would let re-extracting either dataset
+    silently rewrite -- or, interrupted, truncate -- the other's. The copy is cheap
+    (714 MB for place_cube). It is built under latents.partial and renamed into place
+    only once complete, so an interrupted run never leaves a latents/ that a rerun would
+    take as finished; an existing latents/ is re-verified, and refused if incomplete or
+    still sharing files with the source (an earlier version of this script hardlinked).
+    """
+    with open(os.path.join(latents_from, "meta", "episodes.jsonl")) as f:
+        theirs = {e["episode_index"]: e["action_config"] for e in map(json.loads, f)}
+    seg_key = lambda c: (c["start_frame"], c["end_frame"], c["action_text"])  # noqa: E731
+    for ep in new_episodes:
+        mine = [seg_key(c) for c in ep["action_config"]]
+        other = [seg_key(c) for c in theirs.get(ep["episode_index"], [])]
+        assert mine == other, (
+            f"episode {ep['episode_index']}: action_config differs from "
+            f"{latents_from} ({mine} vs {other}); its latents do not apply. Match "
+            f"--chunk-frames/--min-chunk-frames, or extract latents for this dataset.")
+
+    src_latents = os.path.join(latents_from, "latents")
+    problems = latent_problems(src_latents, new_episodes, cams)
+    assert not problems, (f"{src_latents} is itself incomplete ({len(problems)} "
+                          f"problems, e.g. {problems[:3]}); extract its latents first.")
+
+    dst_latents = os.path.join(dst, "latents")
+    if not os.path.exists(dst_latents):
+        partial = dst_latents + ".partial"
+        if os.path.exists(partial):  # left by an interrupted run
+            shutil.rmtree(partial)
+        shutil.copytree(src_latents, partial)
+        problems = latent_problems(partial, new_episodes, cams)
+        assert not problems, f"copy came out incomplete: {problems[:3]}"
+        os.rename(partial, dst_latents)
+    problems = latent_problems(dst_latents, new_episodes, cams, source_root=src_latents)
+    assert not problems, (
+        f"{dst_latents} cannot be used ({len(problems)} problems, e.g. {problems[:3]}). "
+        f"Delete it and rerun.")
+
+    # Replaced atomically rather than skipped when present, so a hardlink left by an
+    # earlier version is broken without touching the source's file.
+    emb_tmp = os.path.join(dst, "empty_emb.pt.partial")
+    shutil.copy2(os.path.join(latents_from, "empty_emb.pt"), emb_tmp)
+    os.replace(emb_tmp, os.path.join(dst, "empty_emb.pt"))
+
+    print(f"[latents] copied from {latents_from}: {len(cams)} cameras "
+          f"({', '.join(cams)}), all "
+          f"{sum(len(e['action_config']) for e in new_episodes)} segments present")
 
 
 def col_stats(arr: np.ndarray) -> dict:
@@ -169,7 +281,7 @@ def main():
                           "where k+1 = ((seg_frames-1)//stride)//4 + 1, and stride = "
                           "ori_fps/target_fps from script/extract_va_latents.py. At "
                           "5fps (stride 6) the longest cover_blocks episode is 26496 "
-                          "tokens, hence max_seq_len=26624 in va_yam_cover_blocks_train_cfg.")
+                          "tokens, which needs max_seq_len >= 26624.")
     ap.add_argument("--min-chunk-frames", type=int, default=100,
                      help="Only used when --chunk-frames > 0: a trailing remainder "
                           "shorter than this is merged into the previous chunk "
@@ -186,15 +298,28 @@ def main():
                           "the normalization, and the clip bounds it produces are not "
                           "the ones the training distribution implies. Must match the "
                           "`episode_subset` of the config that trains on this dataset.")
+    ap.add_argument("--action-space", choices=("eef", "joint"), default="eef",
+                     help="eef (default): FK to the 16-dim EEF layout, norm_stat on "
+                          "segment-relative poses. joint: keep the raw 14-dim joints, "
+                          "norm_stat on absolute angles in the base model's joint "
+                          "slots (14:20, 21:27). Must match the training config's "
+                          "action_space.")
+    ap.add_argument("--latents-from", default=None, metavar="DIR",
+                     help="Copy latents/ and empty_emb.pt from an existing "
+                          "conversion of the same --src (e.g. the EEF one), after "
+                          "checking its action_config segments are identical. Copied, "
+                          "not hardlinked, so re-extracting either dataset's latents "
+                          "cannot change the other's.")
     args = ap.parse_args()
 
     src, dst = args.src, args.dst
+    joint = args.action_space == "joint"
     if os.path.exists(dst) and args.overwrite:
         shutil.rmtree(dst)
     os.makedirs(os.path.join(dst, "data", "chunk-000"), exist_ok=True)
     os.makedirs(os.path.join(dst, "meta"), exist_ok=True)
 
-    fk = build_fk(args.i2rt_root)
+    fk = None if joint else build_fk(args.i2rt_root)
 
     # 1. Videos: hardlink-copy (byte-identical, no re-encoding needed at this stage).
     dst_videos = os.path.join(dst, "videos")
@@ -235,11 +360,14 @@ def main():
 
         state14 = read_list_column(src_table, "observation.state")
         action14 = read_list_column(src_table, "action")
-        state16 = joints14_to_eef16(state14, fk)
-        action16 = joints14_to_eef16(action14, fk)
+        if joint:
+            state_out, action_out = state14, action14
+        else:
+            state_out = joints14_to_eef16(state14, fk)
+            action_out = joints14_to_eef16(action14, fk)
 
         write_parquet(os.path.join(dst, "data", "chunk-000", fname), src_table,
-                      state16, action16)
+                      state_out, action_out)
 
         task_text = ep["tasks"][0]
         chunks = make_chunks(length, args.chunk_frames, args.min_chunk_frames)
@@ -253,9 +381,11 @@ def main():
             })
             # norm_stat must be computed on the relative-pose-transformed action
             # PER SEGMENT (relative to that segment's own first frame), since that's
-            # what _action_post_process applies before normalization.
+            # what _action_post_process applies before normalization. Joint actions
+            # reach normalization untransformed, so they are fitted as they are.
             if norm_stat_episodes is None or idx in norm_stat_episodes:
-                all_rel_actions.append(relativize_action16(action16[c_start:c_end]))
+                seg = action_out[c_start:c_end]
+                all_rel_actions.append(seg if joint else relativize_action16(seg))
 
         new_episodes.append({
             "episode_index": idx,
@@ -266,15 +396,16 @@ def main():
 
         src_stats = src_stats_by_ep[idx]["stats"]
         new_stats = dict(src_stats)
-        new_stats["observation.state"] = col_stats(state16)
-        new_stats["action"] = col_stats(action16)
+        new_stats["observation.state"] = col_stats(state_out)
+        new_stats["action"] = col_stats(action_out)
         new_stats_lines.append({"episode_index": idx, "stats": new_stats})
 
         print(f"[convert] episode {idx:06d} ({length} frames, {len(chunks)} chunks) done")
 
     # 3. meta/info.json -- update state/action feature blocks to 16-dim EEF layout.
+    #    Joint mode keeps --src's 14-dim blocks, which already describe its columns.
     new_info = deepcopy(src_info)
-    for key in ("observation.state", "action"):
+    for key in (() if joint else ("observation.state", "action")):
         new_info["features"][key]["shape"] = [16]
         new_info["features"][key]["names"] = list(RAW16_NAMES)
     with open(os.path.join(dst, "meta", "info.json"), "w") as f:
@@ -296,21 +427,23 @@ def main():
 
     # 7. norm_stat (q01/q99), computed on relative-pose-transformed actions, scattered
     #    into the canonical 30-dim layout. Grippers are NOT relativized (pass-through,
-    #    already normalized [0,1] like robotwin's).
-    all_rel = np.concatenate(all_rel_actions, axis=0)  # (total_frames, 16), raw order
-    q01_16 = np.percentile(all_rel, 1, axis=0)
-    q99_16 = np.percentile(all_rel, 99, axis=0)
+    #    already normalized [0,1] like robotwin's). Joint mode: absolute angles, raw
+    #    [left q6, left grip, right q6, right grip] scattered into the joint slots.
+    all_rel = np.concatenate(all_rel_actions, axis=0)  # (total_frames, D), raw order
+    q01_raw = np.percentile(all_rel, 1, axis=0)
+    q99_raw = np.percentile(all_rel, 99, axis=0)
 
     q01_30 = np.zeros(30)
     q99_30 = np.zeros(30)
-    q01_30[LEFT_EEF_CANON] = q01_16[0:7]
-    q99_30[LEFT_EEF_CANON] = q99_16[0:7]
-    q01_30[RIGHT_EEF_CANON] = q01_16[8:15]
-    q99_30[RIGHT_EEF_CANON] = q99_16[8:15]
-    q01_30[LEFT_GRIPPER_CANON] = q01_16[7]
-    q99_30[LEFT_GRIPPER_CANON] = q99_16[7]
-    q01_30[RIGHT_GRIPPER_CANON] = q01_16[15]
-    q99_30[RIGHT_GRIPPER_CANON] = q99_16[15]
+    if joint:
+        layout = ((LEFT_JOINT_CANON, slice(0, 6)), (LEFT_GRIPPER_CANON, 6),
+                  (RIGHT_JOINT_CANON, slice(7, 13)), (RIGHT_GRIPPER_CANON, 13))
+    else:
+        layout = ((LEFT_EEF_CANON, slice(0, 7)), (LEFT_GRIPPER_CANON, 7),
+                  (RIGHT_EEF_CANON, slice(8, 15)), (RIGHT_GRIPPER_CANON, 15))
+    for canon, raw in layout:
+        q01_30[canon] = q01_raw[raw]
+        q99_30[canon] = q99_raw[raw]
 
     norm_stat = {"q01": q01_30.tolist(), "q99": q99_30.tolist()}
     # Record the fit set: which episodes these quantiles came from is not recoverable
@@ -321,14 +454,19 @@ def main():
     with open(os.path.join(dst, "norm_stat.json"), "w") as f:
         json.dump(norm_stat, f, indent=2)
 
-    print("\n=== norm_stat (paste into wan_va/configs/va_yam_cover_blocks_train_cfg.py) ===")
-    print("va_yam_cover_blocks_train_cfg.norm_stat = {")
+    print("\n=== norm_stat (paste into the serving config of this dataset, e.g. "
+          "wan_va/configs/va_yam_place_cube_cfg.py) ===")
+    print("norm_stat = {")
     print(f"    'q01': {q01_30.tolist()},")
     print(f"    'q99': {q99_30.tolist()},")
     print("}")
+
+    if args.latents_from:
+        copy_latents(args.latents_from, dst, new_episodes, video_cameras(new_info))
     print(f"\nDone. Converted dataset written to: {dst}")
-    print("Next: copy empty_emb.pt from Datasets/robotwin-clean-and-aug-lerobot/, then "
-          "run script/extract_va_latents.py to produce latents/.")
+    if not args.latents_from:
+        print("Next: copy empty_emb.pt from Datasets/robotwin-clean-and-aug-lerobot/, "
+              "then run script/extract_va_latents.py to produce latents/.")
 
 
 if __name__ == "__main__":

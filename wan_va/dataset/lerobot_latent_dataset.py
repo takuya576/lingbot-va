@@ -287,7 +287,10 @@ class LatentLeRobotDataset(LeRobotDataset):
         act_shift = int(latent_frame_ids[0] - local_start_frame)
         frame_stride = latent_frame_ids[1] - latent_frame_ids[0]
         action = action[act_shift:]
-        if self.config.env_type == 'robotwin_tshape': ## TODO support get_relative_pose for other dataset, currently only support robotwin 
+        # Joint-space actions (action_space == 'joint') are absolute and never
+        # relativized; the tshape camera layout is independent of this.
+        if (self.config.env_type == 'robotwin_tshape'
+                and getattr(self.config, 'action_space', 'eef') == 'eef'): ## TODO support get_relative_pose for other dataset, currently only support robotwin
             left_action = get_relative_pose(action[:, :7])
             right_action = get_relative_pose(action[:, 8:15])
             action = np.concatenate([left_action, action[:, 7:8], right_action, action[:, 15:16]], axis=1)

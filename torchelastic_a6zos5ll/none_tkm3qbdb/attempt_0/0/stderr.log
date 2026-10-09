@@ -1,0 +1,1469 @@
+The config attributes {'clip_output': False} were passed to AutoencoderKLWan, but are not expected and will be ignored. Please verify your config.json configuration file.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 172.50it/s]
+/opt/miniconda3/envs/lingbot-va/lib/python3.10/site-packages/torch/distributed/distributed_c10d.py:4876: UserWarning: barrier(): using the device under current context. You can specify `device_id` in `init_process_group` to mute this warning.
+  warnings.warn(  # warn only once
+[rank0]:[W1007 15:34:04.427390797 ProcessGroupNCCL.cpp:5068] Guessing device ID based on global rank. This can cause a hang if rank to GPU mapping is heterogeneous. You can specify device_id in init_process_group()
+The config attributes {'clip_output': False} were passed to AutoencoderKLWan, but are not expected and will be ignored. Please verify your config.json configuration file.
+2026-10-07 15:34:05,038 - root - INFO - ******************************USE Server mode******************************
+2026-10-07 15:34:05,038 - root - INFO - Serving {'config_name': 'yam_place_cube_base', 'serving_dir': '/data2/takuya/lingbot-va/Pretrained_models/lingbot-va-posttrain-yam-place-cube-base', 'transformer_weights': '/data2/takuya/lingbot-va/train_out/yam_place_cube_base/20260929_134031/checkpoints/checkpoint_step_3000/transformer/diffusion_pytorch_model.safetensors', 'action_per_frame': 16, 'num_inference_steps': 5, 'video_exec_step': -1, 'action_num_inference_steps': 10, 'attn_window': 72, 'guidance_scale': 5, 'action_guidance_scale': 1, 'frame0_action': 'train_pad', 'norm_stat': {'q01': [-0.01613114058971405, -0.34552717083133755, -0.19018375987187028, -0.11398230924629182, -4.057140035762635e-05, -0.0917769620582623, 0.7891655174002978, -0.020370704233646394, -0.032947961343452334, -0.1863137216307223, -0.4700328600521805, -0.00012245928614314176, -0.187849806783216, 0.7876441538305189, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.13681027710437774, 0.09933413565158844], 'q99': [0.38210201799869514, 0.03854033527430142, 0.09643310487270347, 0.4662490917757731, 0.5650704936544517, 0.21289535581749536, 1.0, 0.37775842815637584, 0.3253298039082438, 0.08556239753961561, 0.23916610878538516, 0.566232960392461, 0.14781434245087266, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.9934257864952087]}}
+2026-10-07 15:34:05,038 - root - INFO - Running in ASYNC SERVER mode
+2026-10-07 15:34:05,039 - websockets.server - INFO - server listening on 0.0.0.0:29536
+2026-10-07 15:34:08,728 - websockets.server - INFO - connection open
+2026-10-07 15:34:08,728 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 59760) opened
+2026-10-07 15:34:14,204 - root - INFO - ******************* Reset server ******************
+2026-10-07 15:34:14,204 - root - INFO - Reset.
+2026-10-07 15:34:14,581 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:14,848 - root - INFO - FRAME START ID: 0
+ 17%|█▋        | 1/6 [00:00<00:00,  6.60it/s]2026-10-07 15:34:15,000 - root - INFO - FRAME START ID: 0
+2026-10-07 15:34:15,088 - root - INFO - FRAME START ID: 0
+ 50%|█████     | 3/6 [00:00<00:00,  9.61it/s]2026-10-07 15:34:15,175 - root - INFO - FRAME START ID: 0
+2026-10-07 15:34:15,261 - root - INFO - FRAME START ID: 0
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.52it/s]2026-10-07 15:34:15,348 - root - INFO - FRAME START ID: 0
+100%|██████████| 6/6 [00:00<00:00, 10.25it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:15,434 - root - INFO - FRAME START ID: 0
+2026-10-07 15:34:15,518 - root - INFO - FRAME START ID: 0
+ 18%|█▊        | 2/11 [00:00<00:00, 12.62it/s]2026-10-07 15:34:15,593 - root - INFO - FRAME START ID: 0
+2026-10-07 15:34:15,668 - root - INFO - FRAME START ID: 0
+ 36%|███▋      | 4/11 [00:00<00:00, 12.87it/s]2026-10-07 15:34:15,746 - root - INFO - FRAME START ID: 0
+2026-10-07 15:34:15,822 - root - INFO - FRAME START ID: 0
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.07it/s]2026-10-07 15:34:15,896 - root - INFO - FRAME START ID: 0
+2026-10-07 15:34:15,971 - root - INFO - FRAME START ID: 0
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.19it/s]2026-10-07 15:34:16,046 - root - INFO - FRAME START ID: 0
+2026-10-07 15:34:16,120 - root - INFO - FRAME START ID: 0
+ 91%|█████████ | 10/11 [00:00<00:00, 13.26it/s]2026-10-07 15:34:16,195 - root - INFO - FRAME START ID: 0
+100%|██████████| 11/11 [00:00<00:00, 13.18it/s]
+2026-10-07 15:34:17,337 - root - INFO - ################# Compute KV Cache #################
+/data2/takuya/lingbot-va/wan_va/wan_va_server.py:237: UserWarning: The given NumPy array is not writable, and PyTorch does not support non-writable tensors. This means writing to this tensor will result in undefined behavior. You may want to copy the array to protect its data or make it writable before converting it to a tensor. This type of warning will be suppressed for the rest of this program. (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:206.)
+  action_model_input = torch.from_numpy(action)
+2026-10-07 15:34:17,930 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:17,931 - root - INFO - FRAME START ID: 0
+2026-10-07 15:34:18,204 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:18,204 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:18,298 - root - INFO - FRAME START ID: 2
+ 33%|███▎      | 2/6 [00:00<00:00, 10.97it/s]2026-10-07 15:34:18,387 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:18,476 - root - INFO - FRAME START ID: 2
+ 67%|██████▋   | 4/6 [00:00<00:00, 11.12it/s]2026-10-07 15:34:18,565 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:18,654 - root - INFO - FRAME START ID: 2
+100%|██████████| 6/6 [00:00<00:00, 11.21it/s]100%|██████████| 6/6 [00:00<00:00, 11.16it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:18,742 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:18,817 - root - INFO - FRAME START ID: 2
+ 18%|█▊        | 2/11 [00:00<00:00, 13.40it/s]2026-10-07 15:34:18,892 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:18,966 - root - INFO - FRAME START ID: 2
+ 36%|███▋      | 4/11 [00:00<00:00, 13.40it/s]2026-10-07 15:34:19,041 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:19,116 - root - INFO - FRAME START ID: 2
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.26it/s]2026-10-07 15:34:19,194 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:19,268 - root - INFO - FRAME START ID: 2
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.31it/s]2026-10-07 15:34:19,343 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:19,418 - root - INFO - FRAME START ID: 2
+ 91%|█████████ | 10/11 [00:00<00:00, 13.34it/s]2026-10-07 15:34:19,492 - root - INFO - FRAME START ID: 2
+100%|██████████| 11/11 [00:00<00:00, 13.36it/s]
+2026-10-07 15:34:21,382 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:22,121 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:22,121 - root - INFO - FRAME START ID: 2
+2026-10-07 15:34:22,426 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:22,427 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:22,524 - root - INFO - FRAME START ID: 4
+ 33%|███▎      | 2/6 [00:00<00:00, 10.65it/s]2026-10-07 15:34:22,615 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:22,706 - root - INFO - FRAME START ID: 4
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.86it/s]2026-10-07 15:34:22,797 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:22,890 - root - INFO - FRAME START ID: 4
+100%|██████████| 6/6 [00:00<00:00, 10.85it/s]100%|██████████| 6/6 [00:00<00:00, 10.83it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:22,981 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:23,058 - root - INFO - FRAME START ID: 4
+ 18%|█▊        | 2/11 [00:00<00:00, 12.91it/s]2026-10-07 15:34:23,136 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:23,212 - root - INFO - FRAME START ID: 4
+ 36%|███▋      | 4/11 [00:00<00:00, 13.07it/s]2026-10-07 15:34:23,288 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:23,367 - root - INFO - FRAME START ID: 4
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.02it/s]2026-10-07 15:34:23,443 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:23,518 - root - INFO - FRAME START ID: 4
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.11it/s]2026-10-07 15:34:23,593 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:23,669 - root - INFO - FRAME START ID: 4
+ 91%|█████████ | 10/11 [00:00<00:00, 13.12it/s]2026-10-07 15:34:23,746 - root - INFO - FRAME START ID: 4
+100%|██████████| 11/11 [00:00<00:00, 13.12it/s]
+2026-10-07 15:34:25,648 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:26,368 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:26,368 - root - INFO - FRAME START ID: 4
+2026-10-07 15:34:26,661 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:26,662 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:26,758 - root - INFO - FRAME START ID: 6
+ 33%|███▎      | 2/6 [00:00<00:00, 10.65it/s]2026-10-07 15:34:26,850 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:26,942 - root - INFO - FRAME START ID: 6
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.62it/s]2026-10-07 15:34:27,038 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:27,130 - root - INFO - FRAME START ID: 6
+100%|██████████| 6/6 [00:00<00:00, 10.82it/s]100%|██████████| 6/6 [00:00<00:00, 10.76it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:27,220 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:27,296 - root - INFO - FRAME START ID: 6
+ 18%|█▊        | 2/11 [00:00<00:00, 13.01it/s]2026-10-07 15:34:27,373 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:27,449 - root - INFO - FRAME START ID: 6
+ 36%|███▋      | 4/11 [00:00<00:00, 13.11it/s]2026-10-07 15:34:27,525 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:27,603 - root - INFO - FRAME START ID: 6
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.68it/s]2026-10-07 15:34:27,689 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:27,767 - root - INFO - FRAME START ID: 6
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.81it/s]2026-10-07 15:34:27,843 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:27,918 - root - INFO - FRAME START ID: 6
+ 91%|█████████ | 10/11 [00:00<00:00, 12.95it/s]2026-10-07 15:34:27,994 - root - INFO - FRAME START ID: 6
+100%|██████████| 11/11 [00:00<00:00, 12.94it/s]
+2026-10-07 15:34:29,799 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:30,503 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:30,503 - root - INFO - FRAME START ID: 6
+2026-10-07 15:34:30,790 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:30,791 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:30,887 - root - INFO - FRAME START ID: 8
+ 33%|███▎      | 2/6 [00:00<00:00, 10.59it/s]2026-10-07 15:34:30,980 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:31,072 - root - INFO - FRAME START ID: 8
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.74it/s]2026-10-07 15:34:31,164 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:31,256 - root - INFO - FRAME START ID: 8
+100%|██████████| 6/6 [00:00<00:00, 10.89it/s]100%|██████████| 6/6 [00:00<00:00, 10.83it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:31,345 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:31,422 - root - INFO - FRAME START ID: 8
+ 18%|█▊        | 2/11 [00:00<00:00, 12.99it/s]2026-10-07 15:34:31,499 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:31,576 - root - INFO - FRAME START ID: 8
+ 36%|███▋      | 4/11 [00:00<00:00, 13.00it/s]2026-10-07 15:34:31,653 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:31,730 - root - INFO - FRAME START ID: 8
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.01it/s]2026-10-07 15:34:31,806 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:31,883 - root - INFO - FRAME START ID: 8
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.01it/s]2026-10-07 15:34:31,960 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:32,037 - root - INFO - FRAME START ID: 8
+ 91%|█████████ | 10/11 [00:00<00:00, 13.03it/s]2026-10-07 15:34:32,113 - root - INFO - FRAME START ID: 8
+100%|██████████| 11/11 [00:00<00:00, 13.07it/s]
+2026-10-07 15:34:33,877 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:34,595 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:34,595 - root - INFO - FRAME START ID: 8
+2026-10-07 15:34:34,884 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:34,885 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:34,983 - root - INFO - FRAME START ID: 10
+ 33%|███▎      | 2/6 [00:00<00:00, 10.40it/s]2026-10-07 15:34:35,078 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:35,172 - root - INFO - FRAME START ID: 10
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.53it/s]2026-10-07 15:34:35,266 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:35,359 - root - INFO - FRAME START ID: 10
+100%|██████████| 6/6 [00:00<00:00, 10.77it/s]100%|██████████| 6/6 [00:00<00:00, 10.69it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:35,447 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:35,528 - root - INFO - FRAME START ID: 10
+ 18%|█▊        | 2/11 [00:00<00:00, 12.63it/s]2026-10-07 15:34:35,606 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:35,683 - root - INFO - FRAME START ID: 10
+ 36%|███▋      | 4/11 [00:00<00:00, 12.82it/s]2026-10-07 15:34:35,760 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:35,837 - root - INFO - FRAME START ID: 10
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.87it/s]2026-10-07 15:34:35,915 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:35,992 - root - INFO - FRAME START ID: 10
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.88it/s]2026-10-07 15:34:36,070 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:36,147 - root - INFO - FRAME START ID: 10
+ 91%|█████████ | 10/11 [00:00<00:00, 12.89it/s]2026-10-07 15:34:36,225 - root - INFO - FRAME START ID: 10
+100%|██████████| 11/11 [00:00<00:00, 12.92it/s]
+2026-10-07 15:34:38,031 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:38,707 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:38,707 - root - INFO - FRAME START ID: 10
+2026-10-07 15:34:38,991 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:38,992 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:39,091 - root - INFO - FRAME START ID: 12
+ 33%|███▎      | 2/6 [00:00<00:00, 10.36it/s]2026-10-07 15:34:39,185 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:39,279 - root - INFO - FRAME START ID: 12
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.50it/s]2026-10-07 15:34:39,374 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:39,470 - root - INFO - FRAME START ID: 12
+100%|██████████| 6/6 [00:00<00:00, 10.65it/s]100%|██████████| 6/6 [00:00<00:00, 10.59it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:39,559 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:39,637 - root - INFO - FRAME START ID: 12
+ 18%|█▊        | 2/11 [00:00<00:00, 12.65it/s]2026-10-07 15:34:39,717 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:39,795 - root - INFO - FRAME START ID: 12
+ 36%|███▋      | 4/11 [00:00<00:00, 12.73it/s]2026-10-07 15:34:39,873 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:39,951 - root - INFO - FRAME START ID: 12
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.77it/s]2026-10-07 15:34:40,029 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:40,107 - root - INFO - FRAME START ID: 12
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.80it/s]2026-10-07 15:34:40,185 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:40,263 - root - INFO - FRAME START ID: 12
+ 91%|█████████ | 10/11 [00:00<00:00, 12.80it/s]2026-10-07 15:34:40,341 - root - INFO - FRAME START ID: 12
+100%|██████████| 11/11 [00:00<00:00, 12.84it/s]
+2026-10-07 15:34:42,209 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:42,890 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:42,890 - root - INFO - FRAME START ID: 12
+2026-10-07 15:34:43,176 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:43,176 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:43,276 - root - INFO - FRAME START ID: 14
+ 33%|███▎      | 2/6 [00:00<00:00, 10.28it/s]2026-10-07 15:34:43,371 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:43,466 - root - INFO - FRAME START ID: 14
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.41it/s]2026-10-07 15:34:43,562 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:43,657 - root - INFO - FRAME START ID: 14
+100%|██████████| 6/6 [00:00<00:00, 10.62it/s]100%|██████████| 6/6 [00:00<00:00, 10.54it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:43,746 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:43,825 - root - INFO - FRAME START ID: 14
+ 18%|█▊        | 2/11 [00:00<00:00, 12.72it/s]2026-10-07 15:34:43,903 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:43,981 - root - INFO - FRAME START ID: 14
+ 36%|███▋      | 4/11 [00:00<00:00, 12.48it/s]2026-10-07 15:34:44,066 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:44,154 - root - INFO - FRAME START ID: 14
+ 55%|█████▍    | 6/11 [00:00<00:00, 11.91it/s]2026-10-07 15:34:44,243 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:44,331 - root - INFO - FRAME START ID: 14
+ 73%|███████▎  | 8/11 [00:00<00:00, 11.67it/s]2026-10-07 15:34:44,420 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:44,508 - root - INFO - FRAME START ID: 14
+ 91%|█████████ | 10/11 [00:00<00:00, 11.53it/s]2026-10-07 15:34:44,597 - root - INFO - FRAME START ID: 14
+100%|██████████| 11/11 [00:00<00:00, 11.77it/s]
+2026-10-07 15:34:46,407 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:47,086 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:47,086 - root - INFO - FRAME START ID: 14
+2026-10-07 15:34:47,392 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:47,392 - root - INFO - FRAME START ID: 16
+ 17%|█▋        | 1/6 [00:00<00:00,  9.98it/s]2026-10-07 15:34:47,493 - root - INFO - FRAME START ID: 16
+2026-10-07 15:34:47,588 - root - INFO - FRAME START ID: 16
+ 50%|█████     | 3/6 [00:00<00:00, 10.31it/s]2026-10-07 15:34:47,684 - root - INFO - FRAME START ID: 16
+2026-10-07 15:34:47,780 - root - INFO - FRAME START ID: 16
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.38it/s]2026-10-07 15:34:47,876 - root - INFO - FRAME START ID: 16
+100%|██████████| 6/6 [00:00<00:00, 10.44it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:47,967 - root - INFO - FRAME START ID: 16
+2026-10-07 15:34:48,047 - root - INFO - FRAME START ID: 16
+ 18%|█▊        | 2/11 [00:00<00:00, 12.61it/s]2026-10-07 15:34:48,126 - root - INFO - FRAME START ID: 16
+2026-10-07 15:34:48,205 - root - INFO - FRAME START ID: 16
+ 36%|███▋      | 4/11 [00:00<00:00, 12.62it/s]2026-10-07 15:34:48,285 - root - INFO - FRAME START ID: 16
+2026-10-07 15:34:48,366 - root - INFO - FRAME START ID: 16
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.54it/s]2026-10-07 15:34:48,445 - root - INFO - FRAME START ID: 16
+2026-10-07 15:34:48,524 - root - INFO - FRAME START ID: 16
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.57it/s]2026-10-07 15:34:48,604 - root - INFO - FRAME START ID: 16
+2026-10-07 15:34:48,683 - root - INFO - FRAME START ID: 16
+ 91%|█████████ | 10/11 [00:00<00:00, 12.59it/s]2026-10-07 15:34:48,762 - root - INFO - FRAME START ID: 16
+100%|██████████| 11/11 [00:00<00:00, 12.66it/s]
+2026-10-07 15:34:50,645 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:51,281 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:51,282 - root - INFO - FRAME START ID: 16
+2026-10-07 15:34:51,586 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:51,587 - root - INFO - FRAME START ID: 18
+ 17%|█▋        | 1/6 [00:00<00:00,  9.84it/s]2026-10-07 15:34:51,688 - root - INFO - FRAME START ID: 18
+2026-10-07 15:34:51,785 - root - INFO - FRAME START ID: 18
+ 50%|█████     | 3/6 [00:00<00:00, 10.25it/s]2026-10-07 15:34:51,881 - root - INFO - FRAME START ID: 18
+2026-10-07 15:34:51,977 - root - INFO - FRAME START ID: 18
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.30it/s]2026-10-07 15:34:52,074 - root - INFO - FRAME START ID: 18
+100%|██████████| 6/6 [00:00<00:00, 10.40it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:52,164 - root - INFO - FRAME START ID: 18
+2026-10-07 15:34:52,245 - root - INFO - FRAME START ID: 18
+ 18%|█▊        | 2/11 [00:00<00:00, 12.36it/s]2026-10-07 15:34:52,326 - root - INFO - FRAME START ID: 18
+2026-10-07 15:34:52,407 - root - INFO - FRAME START ID: 18
+ 36%|███▋      | 4/11 [00:00<00:00, 12.36it/s]2026-10-07 15:34:52,488 - root - INFO - FRAME START ID: 18
+2026-10-07 15:34:52,569 - root - INFO - FRAME START ID: 18
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.36it/s]2026-10-07 15:34:52,650 - root - INFO - FRAME START ID: 18
+2026-10-07 15:34:52,730 - root - INFO - FRAME START ID: 18
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.37it/s]2026-10-07 15:34:52,811 - root - INFO - FRAME START ID: 18
+2026-10-07 15:34:52,892 - root - INFO - FRAME START ID: 18
+ 91%|█████████ | 10/11 [00:00<00:00, 12.39it/s]2026-10-07 15:34:52,973 - root - INFO - FRAME START ID: 18
+100%|██████████| 11/11 [00:00<00:00, 12.47it/s]
+2026-10-07 15:34:54,767 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:55,402 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:55,402 - root - INFO - FRAME START ID: 18
+2026-10-07 15:34:55,699 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 15:34:55,699 - root - INFO - FRAME START ID: 20
+ 17%|█▋        | 1/6 [00:00<00:00,  9.84it/s]2026-10-07 15:34:55,801 - root - INFO - FRAME START ID: 20
+2026-10-07 15:34:55,899 - root - INFO - FRAME START ID: 20
+ 50%|█████     | 3/6 [00:00<00:00, 10.11it/s]2026-10-07 15:34:55,997 - root - INFO - FRAME START ID: 20
+2026-10-07 15:34:56,095 - root - INFO - FRAME START ID: 20
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.17it/s]2026-10-07 15:34:56,193 - root - INFO - FRAME START ID: 20
+100%|██████████| 6/6 [00:00<00:00, 10.26it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 15:34:56,285 - root - INFO - FRAME START ID: 20
+2026-10-07 15:34:56,367 - root - INFO - FRAME START ID: 20
+ 18%|█▊        | 2/11 [00:00<00:00, 12.18it/s]2026-10-07 15:34:56,449 - root - INFO - FRAME START ID: 20
+2026-10-07 15:34:56,531 - root - INFO - FRAME START ID: 20
+ 36%|███▋      | 4/11 [00:00<00:00, 12.20it/s]2026-10-07 15:34:56,613 - root - INFO - FRAME START ID: 20
+2026-10-07 15:34:56,695 - root - INFO - FRAME START ID: 20
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.19it/s]2026-10-07 15:34:56,777 - root - INFO - FRAME START ID: 20
+2026-10-07 15:34:56,859 - root - INFO - FRAME START ID: 20
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.19it/s]2026-10-07 15:34:56,941 - root - INFO - FRAME START ID: 20
+2026-10-07 15:34:57,023 - root - INFO - FRAME START ID: 20
+ 91%|█████████ | 10/11 [00:00<00:00, 12.19it/s]2026-10-07 15:34:57,105 - root - INFO - FRAME START ID: 20
+100%|██████████| 11/11 [00:00<00:00, 12.30it/s]
+2026-10-07 15:34:58,964 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 15:34:59,617 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 15:34:59,617 - root - INFO - FRAME START ID: 20
+2026-10-07 15:35:01,526 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 59760) closed
+2026-10-07 18:43:57,883 - websockets.server - INFO - connection open
+2026-10-07 18:43:57,883 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 36588) opened
+2026-10-07 18:44:17,919 - root - INFO - ******************* Reset server ******************
+2026-10-07 18:44:17,919 - root - INFO - Reset.
+2026-10-07 18:44:18,066 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:18,210 - root - INFO - FRAME START ID: 0
+ 17%|█▋        | 1/6 [00:00<00:00,  8.20it/s]2026-10-07 18:44:18,332 - root - INFO - FRAME START ID: 0
+2026-10-07 18:44:18,418 - root - INFO - FRAME START ID: 0
+ 50%|█████     | 3/6 [00:00<00:00, 10.47it/s]2026-10-07 18:44:18,505 - root - INFO - FRAME START ID: 0
+2026-10-07 18:44:18,591 - root - INFO - FRAME START ID: 0
+ 83%|████████▎ | 5/6 [00:00<00:00, 11.00it/s]2026-10-07 18:44:18,678 - root - INFO - FRAME START ID: 0
+100%|██████████| 6/6 [00:00<00:00, 10.84it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:18,764 - root - INFO - FRAME START ID: 0
+2026-10-07 18:44:18,839 - root - INFO - FRAME START ID: 0
+ 18%|█▊        | 2/11 [00:00<00:00, 13.37it/s]2026-10-07 18:44:18,914 - root - INFO - FRAME START ID: 0
+2026-10-07 18:44:18,988 - root - INFO - FRAME START ID: 0
+ 36%|███▋      | 4/11 [00:00<00:00, 13.42it/s]2026-10-07 18:44:19,063 - root - INFO - FRAME START ID: 0
+2026-10-07 18:44:19,137 - root - INFO - FRAME START ID: 0
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.41it/s]2026-10-07 18:44:19,212 - root - INFO - FRAME START ID: 0
+2026-10-07 18:44:19,286 - root - INFO - FRAME START ID: 0
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.42it/s]2026-10-07 18:44:19,361 - root - INFO - FRAME START ID: 0
+2026-10-07 18:44:19,435 - root - INFO - FRAME START ID: 0
+ 91%|█████████ | 10/11 [00:00<00:00, 13.42it/s]2026-10-07 18:44:19,510 - root - INFO - FRAME START ID: 0
+100%|██████████| 11/11 [00:00<00:00, 13.42it/s]
+2026-10-07 18:44:20,657 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:21,201 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:21,201 - root - INFO - FRAME START ID: 0
+2026-10-07 18:44:21,469 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:21,470 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:21,565 - root - INFO - FRAME START ID: 2
+ 33%|███▎      | 2/6 [00:00<00:00, 10.88it/s]2026-10-07 18:44:21,654 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:21,742 - root - INFO - FRAME START ID: 2
+ 67%|██████▋   | 4/6 [00:00<00:00, 11.13it/s]2026-10-07 18:44:21,831 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:21,919 - root - INFO - FRAME START ID: 2
+100%|██████████| 6/6 [00:00<00:00, 11.25it/s]100%|██████████| 6/6 [00:00<00:00, 11.18it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:22,007 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:22,082 - root - INFO - FRAME START ID: 2
+ 18%|█▊        | 2/11 [00:00<00:00, 13.16it/s]2026-10-07 18:44:22,159 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:22,234 - root - INFO - FRAME START ID: 2
+ 36%|███▋      | 4/11 [00:00<00:00, 13.23it/s]2026-10-07 18:44:22,309 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:22,384 - root - INFO - FRAME START ID: 2
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.28it/s]2026-10-07 18:44:22,459 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:22,534 - root - INFO - FRAME START ID: 2
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.29it/s]2026-10-07 18:44:22,610 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:22,685 - root - INFO - FRAME START ID: 2
+ 91%|█████████ | 10/11 [00:00<00:00, 13.25it/s]2026-10-07 18:44:22,762 - root - INFO - FRAME START ID: 2
+100%|██████████| 11/11 [00:00<00:00, 13.27it/s]
+2026-10-07 18:44:24,699 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:25,420 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:25,420 - root - INFO - FRAME START ID: 2
+2026-10-07 18:44:25,716 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:25,717 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:25,813 - root - INFO - FRAME START ID: 4
+ 33%|███▎      | 2/6 [00:00<00:00, 10.76it/s]2026-10-07 18:44:25,903 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:25,992 - root - INFO - FRAME START ID: 4
+ 67%|██████▋   | 4/6 [00:00<00:00, 11.01it/s]2026-10-07 18:44:26,082 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:26,171 - root - INFO - FRAME START ID: 4
+100%|██████████| 6/6 [00:00<00:00, 11.15it/s]100%|██████████| 6/6 [00:00<00:00, 11.08it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:26,259 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:26,335 - root - INFO - FRAME START ID: 4
+ 18%|█▊        | 2/11 [00:00<00:00, 13.17it/s]2026-10-07 18:44:26,411 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:26,488 - root - INFO - FRAME START ID: 4
+ 36%|███▋      | 4/11 [00:00<00:00, 13.13it/s]2026-10-07 18:44:26,563 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:26,639 - root - INFO - FRAME START ID: 4
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.17it/s]2026-10-07 18:44:26,715 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:26,790 - root - INFO - FRAME START ID: 4
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.20it/s]2026-10-07 18:44:26,866 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:26,941 - root - INFO - FRAME START ID: 4
+ 91%|█████████ | 10/11 [00:00<00:00, 13.21it/s]2026-10-07 18:44:27,017 - root - INFO - FRAME START ID: 4
+100%|██████████| 11/11 [00:00<00:00, 13.17it/s]
+2026-10-07 18:44:28,881 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:29,527 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:29,527 - root - INFO - FRAME START ID: 4
+2026-10-07 18:44:29,814 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:29,815 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:29,912 - root - INFO - FRAME START ID: 6
+ 33%|███▎      | 2/6 [00:00<00:00, 10.65it/s]2026-10-07 18:44:30,003 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:30,099 - root - INFO - FRAME START ID: 6
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.68it/s]2026-10-07 18:44:30,190 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:30,281 - root - INFO - FRAME START ID: 6
+100%|██████████| 6/6 [00:00<00:00, 10.92it/s]100%|██████████| 6/6 [00:00<00:00, 10.85it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:30,369 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:30,444 - root - INFO - FRAME START ID: 6
+ 18%|█▊        | 2/11 [00:00<00:00, 13.21it/s]2026-10-07 18:44:30,520 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:30,596 - root - INFO - FRAME START ID: 6
+ 36%|███▋      | 4/11 [00:00<00:00, 13.20it/s]2026-10-07 18:44:30,672 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:30,747 - root - INFO - FRAME START ID: 6
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.20it/s]2026-10-07 18:44:30,823 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:30,899 - root - INFO - FRAME START ID: 6
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.20it/s]2026-10-07 18:44:30,975 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:31,050 - root - INFO - FRAME START ID: 6
+ 91%|█████████ | 10/11 [00:00<00:00, 13.20it/s]2026-10-07 18:44:31,126 - root - INFO - FRAME START ID: 6
+100%|██████████| 11/11 [00:00<00:00, 13.23it/s]
+2026-10-07 18:44:33,176 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:33,858 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:33,858 - root - INFO - FRAME START ID: 6
+2026-10-07 18:44:34,182 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:34,182 - root - INFO - FRAME START ID: 8
+ 17%|█▋        | 1/6 [00:00<00:00,  9.36it/s]2026-10-07 18:44:34,289 - root - INFO - FRAME START ID: 8
+2026-10-07 18:44:34,381 - root - INFO - FRAME START ID: 8
+ 50%|█████     | 3/6 [00:00<00:00, 10.46it/s]2026-10-07 18:44:34,473 - root - INFO - FRAME START ID: 8
+2026-10-07 18:44:34,566 - root - INFO - FRAME START ID: 8
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.64it/s]2026-10-07 18:44:34,657 - root - INFO - FRAME START ID: 8
+100%|██████████| 6/6 [00:00<00:00, 10.67it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:34,746 - root - INFO - FRAME START ID: 8
+2026-10-07 18:44:34,823 - root - INFO - FRAME START ID: 8
+ 18%|█▊        | 2/11 [00:00<00:00, 12.99it/s]2026-10-07 18:44:34,900 - root - INFO - FRAME START ID: 8
+2026-10-07 18:44:34,976 - root - INFO - FRAME START ID: 8
+ 36%|███▋      | 4/11 [00:00<00:00, 13.00it/s]2026-10-07 18:44:35,053 - root - INFO - FRAME START ID: 8
+2026-10-07 18:44:35,130 - root - INFO - FRAME START ID: 8
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.00it/s]2026-10-07 18:44:35,207 - root - INFO - FRAME START ID: 8
+2026-10-07 18:44:35,287 - root - INFO - FRAME START ID: 8
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.89it/s]2026-10-07 18:44:35,364 - root - INFO - FRAME START ID: 8
+2026-10-07 18:44:35,441 - root - INFO - FRAME START ID: 8
+ 91%|█████████ | 10/11 [00:00<00:00, 12.94it/s]2026-10-07 18:44:35,518 - root - INFO - FRAME START ID: 8
+100%|██████████| 11/11 [00:00<00:00, 13.00it/s]
+2026-10-07 18:44:37,911 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:38,616 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:38,616 - root - INFO - FRAME START ID: 8
+2026-10-07 18:44:38,906 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:38,907 - root - INFO - FRAME START ID: 10
+ 17%|█▋        | 1/6 [00:00<00:00,  9.10it/s]2026-10-07 18:44:39,017 - root - INFO - FRAME START ID: 10
+2026-10-07 18:44:39,109 - root - INFO - FRAME START ID: 10
+ 50%|█████     | 3/6 [00:00<00:00, 10.29it/s]2026-10-07 18:44:39,202 - root - INFO - FRAME START ID: 10
+2026-10-07 18:44:39,295 - root - INFO - FRAME START ID: 10
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.53it/s]2026-10-07 18:44:39,388 - root - INFO - FRAME START ID: 10
+100%|██████████| 6/6 [00:00<00:00, 10.52it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:39,478 - root - INFO - FRAME START ID: 10
+2026-10-07 18:44:39,556 - root - INFO - FRAME START ID: 10
+ 18%|█▊        | 2/11 [00:00<00:00, 12.85it/s]2026-10-07 18:44:39,633 - root - INFO - FRAME START ID: 10
+2026-10-07 18:44:39,711 - root - INFO - FRAME START ID: 10
+ 36%|███▋      | 4/11 [00:00<00:00, 12.90it/s]2026-10-07 18:44:39,788 - root - INFO - FRAME START ID: 10
+2026-10-07 18:44:39,866 - root - INFO - FRAME START ID: 10
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.86it/s]2026-10-07 18:44:39,944 - root - INFO - FRAME START ID: 10
+2026-10-07 18:44:40,022 - root - INFO - FRAME START ID: 10
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.87it/s]2026-10-07 18:44:40,099 - root - INFO - FRAME START ID: 10
+2026-10-07 18:44:40,177 - root - INFO - FRAME START ID: 10
+ 91%|█████████ | 10/11 [00:00<00:00, 12.89it/s]2026-10-07 18:44:40,254 - root - INFO - FRAME START ID: 10
+100%|██████████| 11/11 [00:00<00:00, 12.93it/s]
+2026-10-07 18:44:42,114 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:42,777 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:42,777 - root - INFO - FRAME START ID: 10
+2026-10-07 18:44:43,065 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:43,066 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:43,164 - root - INFO - FRAME START ID: 12
+ 33%|███▎      | 2/6 [00:00<00:00, 10.42it/s]2026-10-07 18:44:43,258 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:43,352 - root - INFO - FRAME START ID: 12
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.56it/s]2026-10-07 18:44:43,446 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:43,540 - root - INFO - FRAME START ID: 12
+100%|██████████| 6/6 [00:00<00:00, 10.74it/s]100%|██████████| 6/6 [00:00<00:00, 10.67it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:43,632 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:43,710 - root - INFO - FRAME START ID: 12
+ 18%|█▊        | 2/11 [00:00<00:00, 12.81it/s]2026-10-07 18:44:43,788 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:43,866 - root - INFO - FRAME START ID: 12
+ 36%|███▋      | 4/11 [00:00<00:00, 12.83it/s]2026-10-07 18:44:43,944 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:44,022 - root - INFO - FRAME START ID: 12
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.85it/s]2026-10-07 18:44:44,099 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:44,177 - root - INFO - FRAME START ID: 12
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.85it/s]2026-10-07 18:44:44,255 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:44,334 - root - INFO - FRAME START ID: 12
+ 91%|█████████ | 10/11 [00:00<00:00, 12.81it/s]2026-10-07 18:44:44,412 - root - INFO - FRAME START ID: 12
+100%|██████████| 11/11 [00:00<00:00, 12.88it/s]
+2026-10-07 18:44:46,514 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:47,213 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:47,213 - root - INFO - FRAME START ID: 12
+2026-10-07 18:44:47,514 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:47,515 - root - INFO - FRAME START ID: 14
+ 17%|█▋        | 1/6 [00:00<00:00,  8.54it/s]2026-10-07 18:44:47,632 - root - INFO - FRAME START ID: 14
+2026-10-07 18:44:47,727 - root - INFO - FRAME START ID: 14
+ 50%|█████     | 3/6 [00:00<00:00,  9.93it/s]2026-10-07 18:44:47,822 - root - INFO - FRAME START ID: 14
+ 67%|██████▋   | 4/6 [00:00<00:00,  9.95it/s]2026-10-07 18:44:47,922 - root - INFO - FRAME START ID: 14
+2026-10-07 18:44:48,021 - root - INFO - FRAME START ID: 14
+100%|██████████| 6/6 [00:00<00:00, 10.26it/s]100%|██████████| 6/6 [00:00<00:00, 10.07it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:48,111 - root - INFO - FRAME START ID: 14
+2026-10-07 18:44:48,190 - root - INFO - FRAME START ID: 14
+ 18%|█▊        | 2/11 [00:00<00:00, 12.68it/s]2026-10-07 18:44:48,269 - root - INFO - FRAME START ID: 14
+2026-10-07 18:44:48,347 - root - INFO - FRAME START ID: 14
+ 36%|███▋      | 4/11 [00:00<00:00, 12.73it/s]2026-10-07 18:44:48,426 - root - INFO - FRAME START ID: 14
+2026-10-07 18:44:48,504 - root - INFO - FRAME START ID: 14
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.68it/s]2026-10-07 18:44:48,584 - root - INFO - FRAME START ID: 14
+2026-10-07 18:44:48,667 - root - INFO - FRAME START ID: 14
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.48it/s]2026-10-07 18:44:48,748 - root - INFO - FRAME START ID: 14
+2026-10-07 18:44:48,829 - root - INFO - FRAME START ID: 14
+ 91%|█████████ | 10/11 [00:00<00:00, 12.44it/s]2026-10-07 18:44:48,910 - root - INFO - FRAME START ID: 14
+100%|██████████| 11/11 [00:00<00:00, 12.57it/s]
+2026-10-07 18:44:50,753 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:51,446 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:51,446 - root - INFO - FRAME START ID: 14
+2026-10-07 18:44:51,747 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:44:51,747 - root - INFO - FRAME START ID: 16
+ 17%|█▋        | 1/6 [00:00<00:00,  9.92it/s]2026-10-07 18:44:51,848 - root - INFO - FRAME START ID: 16
+2026-10-07 18:44:51,944 - root - INFO - FRAME START ID: 16
+ 50%|█████     | 3/6 [00:00<00:00, 10.31it/s]2026-10-07 18:44:52,040 - root - INFO - FRAME START ID: 16
+2026-10-07 18:44:52,137 - root - INFO - FRAME START ID: 16
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.34it/s]2026-10-07 18:44:52,233 - root - INFO - FRAME START ID: 16
+100%|██████████| 6/6 [00:00<00:00, 10.45it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:44:52,322 - root - INFO - FRAME START ID: 16
+2026-10-07 18:44:52,402 - root - INFO - FRAME START ID: 16
+ 18%|█▊        | 2/11 [00:00<00:00, 12.57it/s]2026-10-07 18:44:52,482 - root - INFO - FRAME START ID: 16
+2026-10-07 18:44:52,561 - root - INFO - FRAME START ID: 16
+ 36%|███▋      | 4/11 [00:00<00:00, 12.58it/s]2026-10-07 18:44:52,641 - root - INFO - FRAME START ID: 16
+2026-10-07 18:44:52,720 - root - INFO - FRAME START ID: 16
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.57it/s]2026-10-07 18:44:52,800 - root - INFO - FRAME START ID: 16
+2026-10-07 18:44:52,879 - root - INFO - FRAME START ID: 16
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.57it/s]2026-10-07 18:44:52,959 - root - INFO - FRAME START ID: 16
+2026-10-07 18:44:53,038 - root - INFO - FRAME START ID: 16
+ 91%|█████████ | 10/11 [00:00<00:00, 12.57it/s]2026-10-07 18:44:53,118 - root - INFO - FRAME START ID: 16
+100%|██████████| 11/11 [00:00<00:00, 12.64it/s]
+2026-10-07 18:44:54,967 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:44:55,618 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:44:55,618 - root - INFO - FRAME START ID: 16
+2026-10-07 18:44:57,323 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 36588) closed
+2026-10-07 18:45:28,691 - websockets.server - INFO - connection open
+2026-10-07 18:45:28,691 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 38662) opened
+2026-10-07 18:45:35,771 - root - INFO - ******************* Reset server ******************
+2026-10-07 18:45:35,771 - root - INFO - Reset.
+2026-10-07 18:45:35,909 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:45:36,041 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:36,131 - root - INFO - FRAME START ID: 0
+ 33%|███▎      | 2/6 [00:00<00:00, 11.38it/s]2026-10-07 18:45:36,217 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:36,302 - root - INFO - FRAME START ID: 0
+ 67%|██████▋   | 4/6 [00:00<00:00, 11.54it/s]2026-10-07 18:45:36,388 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:36,474 - root - INFO - FRAME START ID: 0
+100%|██████████| 6/6 [00:00<00:00, 11.62it/s]100%|██████████| 6/6 [00:00<00:00, 11.58it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:45:36,559 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:36,635 - root - INFO - FRAME START ID: 0
+ 18%|█▊        | 2/11 [00:00<00:00, 13.35it/s]2026-10-07 18:45:36,709 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:36,786 - root - INFO - FRAME START ID: 0
+ 36%|███▋      | 4/11 [00:00<00:00, 13.21it/s]2026-10-07 18:45:36,862 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:36,938 - root - INFO - FRAME START ID: 0
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.22it/s]2026-10-07 18:45:37,013 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:37,088 - root - INFO - FRAME START ID: 0
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.26it/s]2026-10-07 18:45:37,163 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:37,238 - root - INFO - FRAME START ID: 0
+ 91%|█████████ | 10/11 [00:00<00:00, 13.28it/s]2026-10-07 18:45:37,313 - root - INFO - FRAME START ID: 0
+100%|██████████| 11/11 [00:00<00:00, 13.29it/s]
+2026-10-07 18:45:38,374 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:45:38,860 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:45:38,861 - root - INFO - FRAME START ID: 0
+2026-10-07 18:45:39,131 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:45:39,131 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:39,226 - root - INFO - FRAME START ID: 2
+ 33%|███▎      | 2/6 [00:00<00:00, 10.80it/s]2026-10-07 18:45:39,317 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:39,406 - root - INFO - FRAME START ID: 2
+ 67%|██████▋   | 4/6 [00:00<00:00, 11.01it/s]2026-10-07 18:45:39,496 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:39,585 - root - INFO - FRAME START ID: 2
+100%|██████████| 6/6 [00:00<00:00, 11.12it/s]100%|██████████| 6/6 [00:00<00:00, 11.06it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:45:39,674 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:39,749 - root - INFO - FRAME START ID: 2
+ 18%|█▊        | 2/11 [00:00<00:00, 13.39it/s]2026-10-07 18:45:39,824 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:39,898 - root - INFO - FRAME START ID: 2
+ 36%|███▋      | 4/11 [00:00<00:00, 13.37it/s]2026-10-07 18:45:39,973 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:40,048 - root - INFO - FRAME START ID: 2
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.37it/s]2026-10-07 18:45:40,123 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:40,198 - root - INFO - FRAME START ID: 2
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.25it/s]2026-10-07 18:45:40,276 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:40,351 - root - INFO - FRAME START ID: 2
+ 91%|█████████ | 10/11 [00:00<00:00, 13.30it/s]2026-10-07 18:45:40,425 - root - INFO - FRAME START ID: 2
+100%|██████████| 11/11 [00:00<00:00, 13.33it/s]
+2026-10-07 18:45:42,256 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:45:42,991 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:45:42,991 - root - INFO - FRAME START ID: 2
+2026-10-07 18:45:43,280 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:45:43,281 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:43,375 - root - INFO - FRAME START ID: 4
+ 33%|███▎      | 2/6 [00:00<00:00, 10.90it/s]2026-10-07 18:45:43,464 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:43,553 - root - INFO - FRAME START ID: 4
+ 67%|██████▋   | 4/6 [00:00<00:00, 11.13it/s]2026-10-07 18:45:43,641 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:43,730 - root - INFO - FRAME START ID: 4
+100%|██████████| 6/6 [00:00<00:00, 11.25it/s]100%|██████████| 6/6 [00:00<00:00, 11.19it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:45:43,817 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:43,894 - root - INFO - FRAME START ID: 4
+ 18%|█▊        | 2/11 [00:00<00:00, 13.12it/s]2026-10-07 18:45:43,970 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:44,045 - root - INFO - FRAME START ID: 4
+ 36%|███▋      | 4/11 [00:00<00:00, 13.17it/s]2026-10-07 18:45:44,121 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:44,197 - root - INFO - FRAME START ID: 4
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.19it/s]2026-10-07 18:45:44,272 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:44,348 - root - INFO - FRAME START ID: 4
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.19it/s]2026-10-07 18:45:44,424 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:44,500 - root - INFO - FRAME START ID: 4
+ 91%|█████████ | 10/11 [00:00<00:00, 13.19it/s]2026-10-07 18:45:44,576 - root - INFO - FRAME START ID: 4
+100%|██████████| 11/11 [00:00<00:00, 13.22it/s]
+2026-10-07 18:45:46,341 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:45:47,006 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:45:47,006 - root - INFO - FRAME START ID: 4
+2026-10-07 18:45:47,303 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:45:47,307 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:47,403 - root - INFO - FRAME START ID: 6
+ 33%|███▎      | 2/6 [00:00<00:00, 10.67it/s]2026-10-07 18:45:47,494 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:47,585 - root - INFO - FRAME START ID: 6
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.84it/s]2026-10-07 18:45:47,677 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:47,768 - root - INFO - FRAME START ID: 6
+100%|██████████| 6/6 [00:00<00:00, 10.98it/s]100%|██████████| 6/6 [00:00<00:00, 10.92it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:45:47,856 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:47,933 - root - INFO - FRAME START ID: 6
+ 18%|█▊        | 2/11 [00:00<00:00, 13.15it/s]2026-10-07 18:45:48,009 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:48,084 - root - INFO - FRAME START ID: 6
+ 36%|███▋      | 4/11 [00:00<00:00, 13.17it/s]2026-10-07 18:45:48,160 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:48,236 - root - INFO - FRAME START ID: 6
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.18it/s]2026-10-07 18:45:48,312 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:48,389 - root - INFO - FRAME START ID: 6
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.10it/s]2026-10-07 18:45:48,466 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:48,542 - root - INFO - FRAME START ID: 6
+ 91%|█████████ | 10/11 [00:00<00:00, 13.12it/s]2026-10-07 18:45:48,618 - root - INFO - FRAME START ID: 6
+100%|██████████| 11/11 [00:00<00:00, 13.16it/s]
+2026-10-07 18:45:50,458 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:45:51,119 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:45:51,119 - root - INFO - FRAME START ID: 6
+2026-10-07 18:45:51,409 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:45:51,410 - root - INFO - FRAME START ID: 8
+2026-10-07 18:45:51,508 - root - INFO - FRAME START ID: 8
+ 33%|███▎      | 2/6 [00:00<00:00, 10.50it/s]2026-10-07 18:45:51,601 - root - INFO - FRAME START ID: 8
+2026-10-07 18:45:51,693 - root - INFO - FRAME START ID: 8
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.67it/s]2026-10-07 18:45:51,786 - root - INFO - FRAME START ID: 8
+2026-10-07 18:45:51,878 - root - INFO - FRAME START ID: 8
+100%|██████████| 6/6 [00:00<00:00, 10.85it/s]100%|██████████| 6/6 [00:00<00:00, 10.78it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:45:51,967 - root - INFO - FRAME START ID: 8
+2026-10-07 18:45:52,045 - root - INFO - FRAME START ID: 8
+ 18%|█▊        | 2/11 [00:00<00:00, 12.98it/s]2026-10-07 18:45:52,121 - root - INFO - FRAME START ID: 8
+2026-10-07 18:45:52,198 - root - INFO - FRAME START ID: 8
+ 36%|███▋      | 4/11 [00:00<00:00, 13.02it/s]2026-10-07 18:45:52,275 - root - INFO - FRAME START ID: 8
+2026-10-07 18:45:52,351 - root - INFO - FRAME START ID: 8
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.05it/s]2026-10-07 18:45:52,428 - root - INFO - FRAME START ID: 8
+2026-10-07 18:45:52,504 - root - INFO - FRAME START ID: 8
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.06it/s]2026-10-07 18:45:52,580 - root - INFO - FRAME START ID: 8
+2026-10-07 18:45:52,657 - root - INFO - FRAME START ID: 8
+ 91%|█████████ | 10/11 [00:00<00:00, 13.06it/s]2026-10-07 18:45:52,733 - root - INFO - FRAME START ID: 8
+100%|██████████| 11/11 [00:00<00:00, 13.10it/s]
+2026-10-07 18:45:59,290 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:45:59,964 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:45:59,964 - root - INFO - FRAME START ID: 8
+2026-10-07 18:46:00,261 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:46:00,262 - root - INFO - FRAME START ID: 10
+ 17%|█▋        | 1/6 [00:00<00:00,  9.08it/s]2026-10-07 18:46:00,372 - root - INFO - FRAME START ID: 10
+2026-10-07 18:46:00,464 - root - INFO - FRAME START ID: 10
+ 50%|█████     | 3/6 [00:00<00:00, 10.36it/s]2026-10-07 18:46:00,556 - root - INFO - FRAME START ID: 10
+2026-10-07 18:46:00,647 - root - INFO - FRAME START ID: 10
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.63it/s]2026-10-07 18:46:00,739 - root - INFO - FRAME START ID: 10
+100%|██████████| 6/6 [00:00<00:00, 10.64it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:46:00,827 - root - INFO - FRAME START ID: 10
+2026-10-07 18:46:00,907 - root - INFO - FRAME START ID: 10
+ 18%|█▊        | 2/11 [00:00<00:00, 12.67it/s]2026-10-07 18:46:00,985 - root - INFO - FRAME START ID: 10
+2026-10-07 18:46:01,062 - root - INFO - FRAME START ID: 10
+ 36%|███▋      | 4/11 [00:00<00:00, 12.82it/s]2026-10-07 18:46:01,139 - root - INFO - FRAME START ID: 10
+2026-10-07 18:46:01,217 - root - INFO - FRAME START ID: 10
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.87it/s]2026-10-07 18:46:01,294 - root - INFO - FRAME START ID: 10
+2026-10-07 18:46:01,371 - root - INFO - FRAME START ID: 10
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.88it/s]2026-10-07 18:46:01,449 - root - INFO - FRAME START ID: 10
+2026-10-07 18:46:01,526 - root - INFO - FRAME START ID: 10
+ 91%|█████████ | 10/11 [00:00<00:00, 12.90it/s]2026-10-07 18:46:01,604 - root - INFO - FRAME START ID: 10
+100%|██████████| 11/11 [00:00<00:00, 12.93it/s]
+2026-10-07 18:46:04,645 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:46:05,353 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:46:05,353 - root - INFO - FRAME START ID: 10
+2026-10-07 18:46:05,647 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:46:05,647 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:05,746 - root - INFO - FRAME START ID: 12
+ 33%|███▎      | 2/6 [00:00<00:00, 10.34it/s]2026-10-07 18:46:05,841 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:05,936 - root - INFO - FRAME START ID: 12
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.44it/s]2026-10-07 18:46:06,031 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:06,126 - root - INFO - FRAME START ID: 12
+100%|██████████| 6/6 [00:00<00:00, 10.63it/s]100%|██████████| 6/6 [00:00<00:00, 10.56it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:46:06,216 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:06,300 - root - INFO - FRAME START ID: 12
+ 18%|█▊        | 2/11 [00:00<00:00, 11.86it/s]2026-10-07 18:46:06,385 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:06,469 - root - INFO - FRAME START ID: 12
+ 36%|███▋      | 4/11 [00:00<00:00, 12.14it/s]2026-10-07 18:46:06,547 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:06,624 - root - INFO - FRAME START ID: 12
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.47it/s]2026-10-07 18:46:06,702 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:06,779 - root - INFO - FRAME START ID: 12
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.63it/s]2026-10-07 18:46:06,857 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:06,935 - root - INFO - FRAME START ID: 12
+ 91%|█████████ | 10/11 [00:00<00:00, 12.70it/s]2026-10-07 18:46:07,013 - root - INFO - FRAME START ID: 12
+100%|██████████| 11/11 [00:00<00:00, 12.63it/s]
+2026-10-07 18:46:09,107 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:46:09,774 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:46:09,774 - root - INFO - FRAME START ID: 12
+2026-10-07 18:46:10,061 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:46:10,062 - root - INFO - FRAME START ID: 14
+ 17%|█▋        | 1/6 [00:00<00:00,  9.10it/s]2026-10-07 18:46:10,172 - root - INFO - FRAME START ID: 14
+2026-10-07 18:46:10,267 - root - INFO - FRAME START ID: 14
+ 50%|█████     | 3/6 [00:00<00:00, 10.13it/s]2026-10-07 18:46:10,362 - root - INFO - FRAME START ID: 14
+2026-10-07 18:46:10,457 - root - INFO - FRAME START ID: 14
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.33it/s]2026-10-07 18:46:10,552 - root - INFO - FRAME START ID: 14
+100%|██████████| 6/6 [00:00<00:00, 10.36it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:46:10,642 - root - INFO - FRAME START ID: 14
+2026-10-07 18:46:10,721 - root - INFO - FRAME START ID: 14
+ 18%|█▊        | 2/11 [00:00<00:00, 12.63it/s]2026-10-07 18:46:10,800 - root - INFO - FRAME START ID: 14
+2026-10-07 18:46:10,879 - root - INFO - FRAME START ID: 14
+ 36%|███▋      | 4/11 [00:00<00:00, 12.68it/s]2026-10-07 18:46:10,957 - root - INFO - FRAME START ID: 14
+2026-10-07 18:46:11,036 - root - INFO - FRAME START ID: 14
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.69it/s]2026-10-07 18:46:11,115 - root - INFO - FRAME START ID: 14
+2026-10-07 18:46:11,193 - root - INFO - FRAME START ID: 14
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.70it/s]2026-10-07 18:46:11,272 - root - INFO - FRAME START ID: 14
+2026-10-07 18:46:11,351 - root - INFO - FRAME START ID: 14
+ 91%|█████████ | 10/11 [00:00<00:00, 12.71it/s]2026-10-07 18:46:11,429 - root - INFO - FRAME START ID: 14
+100%|██████████| 11/11 [00:00<00:00, 12.77it/s]
+2026-10-07 18:46:13,192 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:46:13,865 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:46:13,865 - root - INFO - FRAME START ID: 14
+2026-10-07 18:46:14,151 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:46:14,151 - root - INFO - FRAME START ID: 16
+ 17%|█▋        | 1/6 [00:00<00:00,  8.95it/s]2026-10-07 18:46:14,263 - root - INFO - FRAME START ID: 16
+2026-10-07 18:46:14,359 - root - INFO - FRAME START ID: 16
+ 50%|█████     | 3/6 [00:00<00:00,  9.96it/s]2026-10-07 18:46:14,456 - root - INFO - FRAME START ID: 16
+2026-10-07 18:46:14,553 - root - INFO - FRAME START ID: 16
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.16it/s]2026-10-07 18:46:14,649 - root - INFO - FRAME START ID: 16
+100%|██████████| 6/6 [00:00<00:00, 10.21it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:46:14,742 - root - INFO - FRAME START ID: 16
+2026-10-07 18:46:14,823 - root - INFO - FRAME START ID: 16
+ 18%|█▊        | 2/11 [00:00<00:00, 12.40it/s]2026-10-07 18:46:14,904 - root - INFO - FRAME START ID: 16
+2026-10-07 18:46:14,984 - root - INFO - FRAME START ID: 16
+ 36%|███▋      | 4/11 [00:00<00:00, 12.41it/s]2026-10-07 18:46:15,065 - root - INFO - FRAME START ID: 16
+2026-10-07 18:46:15,148 - root - INFO - FRAME START ID: 16
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.24it/s]2026-10-07 18:46:15,231 - root - INFO - FRAME START ID: 16
+2026-10-07 18:46:15,313 - root - INFO - FRAME START ID: 16
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.25it/s]2026-10-07 18:46:15,394 - root - INFO - FRAME START ID: 16
+2026-10-07 18:46:15,473 - root - INFO - FRAME START ID: 16
+ 91%|█████████ | 10/11 [00:00<00:00, 12.37it/s]2026-10-07 18:46:15,553 - root - INFO - FRAME START ID: 16
+100%|██████████| 11/11 [00:00<00:00, 12.44it/s]
+2026-10-07 18:46:17,262 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:46:17,920 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:46:17,920 - root - INFO - FRAME START ID: 16
+2026-10-07 18:46:18,212 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:46:18,213 - root - INFO - FRAME START ID: 18
+ 17%|█▋        | 1/6 [00:00<00:00,  9.97it/s]2026-10-07 18:46:18,313 - root - INFO - FRAME START ID: 18
+2026-10-07 18:46:18,410 - root - INFO - FRAME START ID: 18
+ 50%|█████     | 3/6 [00:00<00:00, 10.15it/s]2026-10-07 18:46:18,509 - root - INFO - FRAME START ID: 18
+2026-10-07 18:46:18,607 - root - INFO - FRAME START ID: 18
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.19it/s]2026-10-07 18:46:18,704 - root - INFO - FRAME START ID: 18
+100%|██████████| 6/6 [00:00<00:00, 10.31it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:46:18,795 - root - INFO - FRAME START ID: 18
+2026-10-07 18:46:18,876 - root - INFO - FRAME START ID: 18
+ 18%|█▊        | 2/11 [00:00<00:00, 12.41it/s]2026-10-07 18:46:18,957 - root - INFO - FRAME START ID: 18
+2026-10-07 18:46:19,037 - root - INFO - FRAME START ID: 18
+ 36%|███▋      | 4/11 [00:00<00:00, 12.44it/s]2026-10-07 18:46:19,117 - root - INFO - FRAME START ID: 18
+2026-10-07 18:46:19,197 - root - INFO - FRAME START ID: 18
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.46it/s]2026-10-07 18:46:19,277 - root - INFO - FRAME START ID: 18
+2026-10-07 18:46:19,357 - root - INFO - FRAME START ID: 18
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.46it/s]2026-10-07 18:46:19,438 - root - INFO - FRAME START ID: 18
+2026-10-07 18:46:19,518 - root - INFO - FRAME START ID: 18
+ 91%|█████████ | 10/11 [00:00<00:00, 12.37it/s]2026-10-07 18:46:19,602 - root - INFO - FRAME START ID: 18
+100%|██████████| 11/11 [00:00<00:00, 12.50it/s]
+2026-10-07 18:46:21,402 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:46:22,087 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:46:22,087 - root - INFO - FRAME START ID: 18
+2026-10-07 18:46:22,396 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:46:22,397 - root - INFO - FRAME START ID: 20
+ 17%|█▋        | 1/6 [00:00<00:00,  9.75it/s]2026-10-07 18:46:22,499 - root - INFO - FRAME START ID: 20
+2026-10-07 18:46:22,598 - root - INFO - FRAME START ID: 20
+ 50%|█████     | 3/6 [00:00<00:00, 10.01it/s]2026-10-07 18:46:22,697 - root - INFO - FRAME START ID: 20
+2026-10-07 18:46:22,795 - root - INFO - FRAME START ID: 20
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.10it/s]2026-10-07 18:46:22,893 - root - INFO - FRAME START ID: 20
+100%|██████████| 6/6 [00:00<00:00, 10.20it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:46:22,985 - root - INFO - FRAME START ID: 20
+2026-10-07 18:46:23,067 - root - INFO - FRAME START ID: 20
+ 18%|█▊        | 2/11 [00:00<00:00, 12.27it/s]2026-10-07 18:46:23,148 - root - INFO - FRAME START ID: 20
+2026-10-07 18:46:23,229 - root - INFO - FRAME START ID: 20
+ 36%|███▋      | 4/11 [00:00<00:00, 12.27it/s]2026-10-07 18:46:23,311 - root - INFO - FRAME START ID: 20
+2026-10-07 18:46:23,392 - root - INFO - FRAME START ID: 20
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.30it/s]2026-10-07 18:46:23,473 - root - INFO - FRAME START ID: 20
+2026-10-07 18:46:23,554 - root - INFO - FRAME START ID: 20
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.20it/s]2026-10-07 18:46:23,639 - root - INFO - FRAME START ID: 20
+2026-10-07 18:46:23,720 - root - INFO - FRAME START ID: 20
+ 91%|█████████ | 10/11 [00:00<00:00, 12.25it/s]2026-10-07 18:46:23,801 - root - INFO - FRAME START ID: 20
+100%|██████████| 11/11 [00:00<00:00, 12.36it/s]
+2026-10-07 18:46:25,610 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:46:26,305 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:46:26,305 - root - INFO - FRAME START ID: 20
+2026-10-07 18:46:26,603 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:46:26,604 - root - INFO - FRAME START ID: 22
+ 17%|█▋        | 1/6 [00:00<00:00,  9.26it/s]2026-10-07 18:46:26,712 - root - INFO - FRAME START ID: 22
+2026-10-07 18:46:26,811 - root - INFO - FRAME START ID: 22
+ 50%|█████     | 3/6 [00:00<00:00,  9.88it/s]2026-10-07 18:46:26,910 - root - INFO - FRAME START ID: 22
+2026-10-07 18:46:27,009 - root - INFO - FRAME START ID: 22
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.00it/s]2026-10-07 18:46:27,107 - root - INFO - FRAME START ID: 22
+100%|██████████| 6/6 [00:00<00:00, 10.08it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:46:27,200 - root - INFO - FRAME START ID: 22
+2026-10-07 18:46:27,283 - root - INFO - FRAME START ID: 22
+ 18%|█▊        | 2/11 [00:00<00:00, 12.10it/s]2026-10-07 18:46:27,365 - root - INFO - FRAME START ID: 22
+2026-10-07 18:46:27,448 - root - INFO - FRAME START ID: 22
+ 36%|███▋      | 4/11 [00:00<00:00, 12.11it/s]2026-10-07 18:46:27,530 - root - INFO - FRAME START ID: 22
+2026-10-07 18:46:27,613 - root - INFO - FRAME START ID: 22
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.01it/s]2026-10-07 18:46:27,698 - root - INFO - FRAME START ID: 22
+2026-10-07 18:46:27,784 - root - INFO - FRAME START ID: 22
+ 73%|███████▎  | 8/11 [00:00<00:00, 11.95it/s]2026-10-07 18:46:27,867 - root - INFO - FRAME START ID: 22
+2026-10-07 18:46:27,950 - root - INFO - FRAME START ID: 22
+ 91%|█████████ | 10/11 [00:00<00:00, 12.00it/s]2026-10-07 18:46:28,032 - root - INFO - FRAME START ID: 22
+100%|██████████| 11/11 [00:00<00:00, 12.14it/s]
+2026-10-07 18:46:36,628 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:46:37,329 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:46:37,329 - root - INFO - FRAME START ID: 22
+2026-10-07 18:46:39,221 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 38662) closed
+2026-10-07 18:47:11,635 - websockets.server - INFO - connection open
+2026-10-07 18:47:11,635 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 43196) opened
+2026-10-07 18:47:19,265 - root - INFO - ******************* Reset server ******************
+2026-10-07 18:47:19,266 - root - INFO - Reset.
+2026-10-07 18:47:19,403 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:19,539 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:19,631 - root - INFO - FRAME START ID: 0
+ 33%|███▎      | 2/6 [00:00<00:00, 11.28it/s]2026-10-07 18:47:19,717 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:19,803 - root - INFO - FRAME START ID: 0
+ 67%|██████▋   | 4/6 [00:00<00:00, 11.48it/s]2026-10-07 18:47:19,889 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:19,975 - root - INFO - FRAME START ID: 0
+100%|██████████| 6/6 [00:00<00:00, 11.57it/s]100%|██████████| 6/6 [00:00<00:00, 11.52it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:20,061 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:20,137 - root - INFO - FRAME START ID: 0
+ 18%|█▊        | 2/11 [00:00<00:00, 13.17it/s]2026-10-07 18:47:20,213 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:20,292 - root - INFO - FRAME START ID: 0
+ 36%|███▋      | 4/11 [00:00<00:00, 12.85it/s]2026-10-07 18:47:20,371 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:20,447 - root - INFO - FRAME START ID: 0
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.92it/s]2026-10-07 18:47:20,525 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:20,601 - root - INFO - FRAME START ID: 0
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.01it/s]2026-10-07 18:47:20,677 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:20,752 - root - INFO - FRAME START ID: 0
+ 91%|█████████ | 10/11 [00:00<00:00, 13.07it/s]2026-10-07 18:47:20,828 - root - INFO - FRAME START ID: 0
+100%|██████████| 11/11 [00:00<00:00, 13.06it/s]
+2026-10-07 18:47:21,912 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:22,432 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:22,432 - root - INFO - FRAME START ID: 0
+2026-10-07 18:47:22,707 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:22,708 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:22,804 - root - INFO - FRAME START ID: 2
+ 33%|███▎      | 2/6 [00:00<00:00, 10.80it/s]2026-10-07 18:47:22,893 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:22,984 - root - INFO - FRAME START ID: 2
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.99it/s]2026-10-07 18:47:23,073 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:23,161 - root - INFO - FRAME START ID: 2
+100%|██████████| 6/6 [00:00<00:00, 11.16it/s]100%|██████████| 6/6 [00:00<00:00, 11.09it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:23,249 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:23,325 - root - INFO - FRAME START ID: 2
+ 18%|█▊        | 2/11 [00:00<00:00, 13.27it/s]2026-10-07 18:47:23,400 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:23,475 - root - INFO - FRAME START ID: 2
+ 36%|███▋      | 4/11 [00:00<00:00, 13.31it/s]2026-10-07 18:47:23,550 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:23,625 - root - INFO - FRAME START ID: 2
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.34it/s]2026-10-07 18:47:23,699 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:23,774 - root - INFO - FRAME START ID: 2
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.36it/s]2026-10-07 18:47:23,849 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:23,923 - root - INFO - FRAME START ID: 2
+ 91%|█████████ | 10/11 [00:00<00:00, 13.38it/s]2026-10-07 18:47:23,998 - root - INFO - FRAME START ID: 2
+100%|██████████| 11/11 [00:00<00:00, 13.38it/s]
+2026-10-07 18:47:25,764 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:26,462 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:26,462 - root - INFO - FRAME START ID: 2
+2026-10-07 18:47:26,766 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:26,766 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:26,862 - root - INFO - FRAME START ID: 4
+ 33%|███▎      | 2/6 [00:00<00:00, 10.70it/s]2026-10-07 18:47:26,953 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:27,044 - root - INFO - FRAME START ID: 4
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.85it/s]2026-10-07 18:47:27,136 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:27,227 - root - INFO - FRAME START ID: 4
+100%|██████████| 6/6 [00:00<00:00, 10.97it/s]100%|██████████| 6/6 [00:00<00:00, 10.92it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:27,316 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:27,393 - root - INFO - FRAME START ID: 4
+ 18%|█▊        | 2/11 [00:00<00:00, 13.05it/s]2026-10-07 18:47:27,470 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:27,546 - root - INFO - FRAME START ID: 4
+ 36%|███▋      | 4/11 [00:00<00:00, 13.08it/s]2026-10-07 18:47:27,622 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:27,698 - root - INFO - FRAME START ID: 4
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.10it/s]2026-10-07 18:47:27,775 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:27,851 - root - INFO - FRAME START ID: 4
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.10it/s]2026-10-07 18:47:27,927 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:28,004 - root - INFO - FRAME START ID: 4
+ 91%|█████████ | 10/11 [00:00<00:00, 13.10it/s]2026-10-07 18:47:28,080 - root - INFO - FRAME START ID: 4
+100%|██████████| 11/11 [00:00<00:00, 13.12it/s]
+2026-10-07 18:47:29,833 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:30,499 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:30,500 - root - INFO - FRAME START ID: 4
+2026-10-07 18:47:30,806 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:30,807 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:30,905 - root - INFO - FRAME START ID: 6
+ 33%|███▎      | 2/6 [00:00<00:00, 10.50it/s]2026-10-07 18:47:30,997 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:31,089 - root - INFO - FRAME START ID: 6
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.75it/s]2026-10-07 18:47:31,180 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:31,271 - root - INFO - FRAME START ID: 6
+100%|██████████| 6/6 [00:00<00:00, 10.92it/s]100%|██████████| 6/6 [00:00<00:00, 10.84it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:31,360 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:31,437 - root - INFO - FRAME START ID: 6
+ 18%|█▊        | 2/11 [00:00<00:00, 13.01it/s]2026-10-07 18:47:31,514 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:31,590 - root - INFO - FRAME START ID: 6
+ 36%|███▋      | 4/11 [00:00<00:00, 13.07it/s]2026-10-07 18:47:31,667 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:31,743 - root - INFO - FRAME START ID: 6
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.11it/s]2026-10-07 18:47:31,819 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:31,895 - root - INFO - FRAME START ID: 6
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.11it/s]2026-10-07 18:47:31,971 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:32,047 - root - INFO - FRAME START ID: 6
+ 91%|█████████ | 10/11 [00:00<00:00, 13.13it/s]2026-10-07 18:47:32,123 - root - INFO - FRAME START ID: 6
+100%|██████████| 11/11 [00:00<00:00, 13.14it/s]
+2026-10-07 18:47:33,848 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:34,484 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:34,485 - root - INFO - FRAME START ID: 6
+2026-10-07 18:47:34,771 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:34,771 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:34,868 - root - INFO - FRAME START ID: 8
+ 33%|███▎      | 2/6 [00:00<00:00, 10.71it/s]2026-10-07 18:47:34,958 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:35,048 - root - INFO - FRAME START ID: 8
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.92it/s]2026-10-07 18:47:35,139 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:35,229 - root - INFO - FRAME START ID: 8
+100%|██████████| 6/6 [00:00<00:00, 11.10it/s]100%|██████████| 6/6 [00:00<00:00, 11.02it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:35,316 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:35,393 - root - INFO - FRAME START ID: 8
+ 18%|█▊        | 2/11 [00:00<00:00, 12.99it/s]2026-10-07 18:47:35,470 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:35,547 - root - INFO - FRAME START ID: 8
+ 36%|███▋      | 4/11 [00:00<00:00, 12.98it/s]2026-10-07 18:47:35,624 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:35,701 - root - INFO - FRAME START ID: 8
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.00it/s]2026-10-07 18:47:35,778 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:35,858 - root - INFO - FRAME START ID: 8
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.90it/s]2026-10-07 18:47:35,935 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:36,011 - root - INFO - FRAME START ID: 8
+ 91%|█████████ | 10/11 [00:00<00:00, 12.94it/s]2026-10-07 18:47:36,088 - root - INFO - FRAME START ID: 8
+100%|██████████| 11/11 [00:00<00:00, 13.00it/s]
+2026-10-07 18:47:37,854 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:38,548 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:38,548 - root - INFO - FRAME START ID: 8
+2026-10-07 18:47:38,852 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:38,855 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:38,954 - root - INFO - FRAME START ID: 10
+ 33%|███▎      | 2/6 [00:00<00:00, 10.46it/s]2026-10-07 18:47:39,046 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:39,139 - root - INFO - FRAME START ID: 10
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.67it/s]2026-10-07 18:47:39,231 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:39,323 - root - INFO - FRAME START ID: 10
+100%|██████████| 6/6 [00:00<00:00, 10.88it/s]100%|██████████| 6/6 [00:00<00:00, 10.79it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:39,411 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:39,489 - root - INFO - FRAME START ID: 10
+ 18%|█▊        | 2/11 [00:00<00:00, 12.91it/s]2026-10-07 18:47:39,566 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:39,643 - root - INFO - FRAME START ID: 10
+ 36%|███▋      | 4/11 [00:00<00:00, 12.93it/s]2026-10-07 18:47:39,721 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:39,798 - root - INFO - FRAME START ID: 10
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.95it/s]2026-10-07 18:47:39,875 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:39,952 - root - INFO - FRAME START ID: 10
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.96it/s]2026-10-07 18:47:40,029 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:40,107 - root - INFO - FRAME START ID: 10
+ 91%|█████████ | 10/11 [00:00<00:00, 12.94it/s]2026-10-07 18:47:40,184 - root - INFO - FRAME START ID: 10
+100%|██████████| 11/11 [00:00<00:00, 12.98it/s]
+2026-10-07 18:47:41,902 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:42,579 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:42,579 - root - INFO - FRAME START ID: 10
+2026-10-07 18:47:42,866 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:42,866 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:42,964 - root - INFO - FRAME START ID: 12
+ 33%|███▎      | 2/6 [00:00<00:00, 10.51it/s]2026-10-07 18:47:43,057 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:43,150 - root - INFO - FRAME START ID: 12
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.64it/s]2026-10-07 18:47:43,243 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:43,336 - root - INFO - FRAME START ID: 12
+100%|██████████| 6/6 [00:00<00:00, 10.83it/s]100%|██████████| 6/6 [00:00<00:00, 10.76it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:43,424 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:43,503 - root - INFO - FRAME START ID: 12
+ 18%|█▊        | 2/11 [00:00<00:00, 12.68it/s]2026-10-07 18:47:43,582 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:43,660 - root - INFO - FRAME START ID: 12
+ 36%|███▋      | 4/11 [00:00<00:00, 12.70it/s]2026-10-07 18:47:43,739 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:43,818 - root - INFO - FRAME START ID: 12
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.70it/s]2026-10-07 18:47:43,897 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:43,977 - root - INFO - FRAME START ID: 12
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.66it/s]2026-10-07 18:47:44,055 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:44,133 - root - INFO - FRAME START ID: 12
+ 91%|█████████ | 10/11 [00:00<00:00, 12.71it/s]2026-10-07 18:47:44,212 - root - INFO - FRAME START ID: 12
+100%|██████████| 11/11 [00:00<00:00, 12.77it/s]
+2026-10-07 18:47:45,988 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:46,645 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:46,646 - root - INFO - FRAME START ID: 12
+2026-10-07 18:47:46,941 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:46,942 - root - INFO - FRAME START ID: 14
+ 17%|█▋        | 1/6 [00:00<00:00,  9.94it/s]2026-10-07 18:47:47,043 - root - INFO - FRAME START ID: 14
+2026-10-07 18:47:47,137 - root - INFO - FRAME START ID: 14
+ 50%|█████     | 3/6 [00:00<00:00, 10.41it/s]2026-10-07 18:47:47,232 - root - INFO - FRAME START ID: 14
+2026-10-07 18:47:47,326 - root - INFO - FRAME START ID: 14
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.50it/s]2026-10-07 18:47:47,421 - root - INFO - FRAME START ID: 14
+100%|██████████| 6/6 [00:00<00:00, 10.59it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:47,509 - root - INFO - FRAME START ID: 14
+2026-10-07 18:47:47,588 - root - INFO - FRAME START ID: 14
+ 18%|█▊        | 2/11 [00:00<00:00, 12.70it/s]2026-10-07 18:47:47,667 - root - INFO - FRAME START ID: 14
+2026-10-07 18:47:47,745 - root - INFO - FRAME START ID: 14
+ 36%|███▋      | 4/11 [00:00<00:00, 12.73it/s]2026-10-07 18:47:47,824 - root - INFO - FRAME START ID: 14
+2026-10-07 18:47:47,902 - root - INFO - FRAME START ID: 14
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.74it/s]2026-10-07 18:47:47,981 - root - INFO - FRAME START ID: 14
+2026-10-07 18:47:48,060 - root - INFO - FRAME START ID: 14
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.72it/s]2026-10-07 18:47:48,138 - root - INFO - FRAME START ID: 14
+2026-10-07 18:47:48,217 - root - INFO - FRAME START ID: 14
+ 91%|█████████ | 10/11 [00:00<00:00, 12.72it/s]2026-10-07 18:47:48,295 - root - INFO - FRAME START ID: 14
+100%|██████████| 11/11 [00:00<00:00, 12.79it/s]
+2026-10-07 18:47:51,381 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:52,065 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:52,066 - root - INFO - FRAME START ID: 14
+2026-10-07 18:47:52,350 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:52,351 - root - INFO - FRAME START ID: 16
+ 17%|█▋        | 1/6 [00:00<00:00,  9.86it/s]2026-10-07 18:47:52,453 - root - INFO - FRAME START ID: 16
+2026-10-07 18:47:52,549 - root - INFO - FRAME START ID: 16
+ 50%|█████     | 3/6 [00:00<00:00, 10.25it/s]2026-10-07 18:47:52,645 - root - INFO - FRAME START ID: 16
+2026-10-07 18:47:52,741 - root - INFO - FRAME START ID: 16
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.33it/s]2026-10-07 18:47:52,837 - root - INFO - FRAME START ID: 16
+100%|██████████| 6/6 [00:00<00:00, 10.42it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:52,928 - root - INFO - FRAME START ID: 16
+2026-10-07 18:47:53,007 - root - INFO - FRAME START ID: 16
+ 18%|█▊        | 2/11 [00:00<00:00, 12.56it/s]2026-10-07 18:47:53,087 - root - INFO - FRAME START ID: 16
+2026-10-07 18:47:53,166 - root - INFO - FRAME START ID: 16
+ 36%|███▋      | 4/11 [00:00<00:00, 12.57it/s]2026-10-07 18:47:53,246 - root - INFO - FRAME START ID: 16
+2026-10-07 18:47:53,325 - root - INFO - FRAME START ID: 16
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.57it/s]2026-10-07 18:47:53,405 - root - INFO - FRAME START ID: 16
+2026-10-07 18:47:53,484 - root - INFO - FRAME START ID: 16
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.57it/s]2026-10-07 18:47:53,564 - root - INFO - FRAME START ID: 16
+2026-10-07 18:47:53,643 - root - INFO - FRAME START ID: 16
+ 91%|█████████ | 10/11 [00:00<00:00, 12.58it/s]2026-10-07 18:47:53,723 - root - INFO - FRAME START ID: 16
+100%|██████████| 11/11 [00:00<00:00, 12.65it/s]
+2026-10-07 18:47:56,963 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:47:57,619 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:47:57,619 - root - INFO - FRAME START ID: 16
+2026-10-07 18:47:57,907 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:47:57,908 - root - INFO - FRAME START ID: 18
+ 17%|█▋        | 1/6 [00:00<00:00,  9.66it/s]2026-10-07 18:47:58,012 - root - INFO - FRAME START ID: 18
+2026-10-07 18:47:58,111 - root - INFO - FRAME START ID: 18
+ 50%|█████     | 3/6 [00:00<00:00,  9.99it/s]2026-10-07 18:47:58,209 - root - INFO - FRAME START ID: 18
+2026-10-07 18:47:58,307 - root - INFO - FRAME START ID: 18
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.16it/s]2026-10-07 18:47:58,403 - root - INFO - FRAME START ID: 18
+100%|██████████| 6/6 [00:00<00:00, 10.25it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:47:58,494 - root - INFO - FRAME START ID: 18
+2026-10-07 18:47:58,575 - root - INFO - FRAME START ID: 18
+ 18%|█▊        | 2/11 [00:00<00:00, 12.32it/s]2026-10-07 18:47:58,656 - root - INFO - FRAME START ID: 18
+2026-10-07 18:47:58,737 - root - INFO - FRAME START ID: 18
+ 36%|███▋      | 4/11 [00:00<00:00, 12.35it/s]2026-10-07 18:47:58,818 - root - INFO - FRAME START ID: 18
+2026-10-07 18:47:58,902 - root - INFO - FRAME START ID: 18
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.19it/s]2026-10-07 18:47:58,985 - root - INFO - FRAME START ID: 18
+2026-10-07 18:47:59,066 - root - INFO - FRAME START ID: 18
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.25it/s]2026-10-07 18:47:59,146 - root - INFO - FRAME START ID: 18
+2026-10-07 18:47:59,227 - root - INFO - FRAME START ID: 18
+ 91%|█████████ | 10/11 [00:00<00:00, 12.31it/s]2026-10-07 18:47:59,307 - root - INFO - FRAME START ID: 18
+100%|██████████| 11/11 [00:00<00:00, 12.39it/s]
+2026-10-07 18:48:01,137 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:48:01,808 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:48:01,808 - root - INFO - FRAME START ID: 18
+2026-10-07 18:48:02,119 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:48:02,123 - root - INFO - FRAME START ID: 20
+ 17%|█▋        | 1/6 [00:00<00:00,  9.87it/s]2026-10-07 18:48:02,224 - root - INFO - FRAME START ID: 20
+2026-10-07 18:48:02,321 - root - INFO - FRAME START ID: 20
+ 50%|█████     | 3/6 [00:00<00:00, 10.18it/s]2026-10-07 18:48:02,418 - root - INFO - FRAME START ID: 20
+2026-10-07 18:48:02,515 - root - INFO - FRAME START ID: 20
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.24it/s]2026-10-07 18:48:02,613 - root - INFO - FRAME START ID: 20
+100%|██████████| 6/6 [00:00<00:00, 10.34it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:48:02,704 - root - INFO - FRAME START ID: 20
+2026-10-07 18:48:02,786 - root - INFO - FRAME START ID: 20
+ 18%|█▊        | 2/11 [00:00<00:00, 12.22it/s]2026-10-07 18:48:02,868 - root - INFO - FRAME START ID: 20
+2026-10-07 18:48:02,949 - root - INFO - FRAME START ID: 20
+ 36%|███▋      | 4/11 [00:00<00:00, 12.25it/s]2026-10-07 18:48:03,030 - root - INFO - FRAME START ID: 20
+2026-10-07 18:48:03,112 - root - INFO - FRAME START ID: 20
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.26it/s]2026-10-07 18:48:03,194 - root - INFO - FRAME START ID: 20
+2026-10-07 18:48:03,275 - root - INFO - FRAME START ID: 20
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.24it/s]2026-10-07 18:48:03,357 - root - INFO - FRAME START ID: 20
+2026-10-07 18:48:03,439 - root - INFO - FRAME START ID: 20
+ 91%|█████████ | 10/11 [00:00<00:00, 12.24it/s]2026-10-07 18:48:03,521 - root - INFO - FRAME START ID: 20
+100%|██████████| 11/11 [00:00<00:00, 12.35it/s]
+2026-10-07 18:48:05,348 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:48:06,013 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:48:06,013 - root - INFO - FRAME START ID: 20
+2026-10-07 18:48:06,317 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:48:06,318 - root - INFO - FRAME START ID: 22
+ 17%|█▋        | 1/6 [00:00<00:00,  9.70it/s]2026-10-07 18:48:06,421 - root - INFO - FRAME START ID: 22
+2026-10-07 18:48:06,519 - root - INFO - FRAME START ID: 22
+ 50%|█████     | 3/6 [00:00<00:00, 10.05it/s]2026-10-07 18:48:06,618 - root - INFO - FRAME START ID: 22
+2026-10-07 18:48:06,715 - root - INFO - FRAME START ID: 22
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.14it/s]2026-10-07 18:48:06,813 - root - INFO - FRAME START ID: 22
+100%|██████████| 6/6 [00:00<00:00, 10.23it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:48:06,905 - root - INFO - FRAME START ID: 22
+2026-10-07 18:48:06,990 - root - INFO - FRAME START ID: 22
+ 18%|█▊        | 2/11 [00:00<00:00, 11.96it/s]2026-10-07 18:48:07,072 - root - INFO - FRAME START ID: 22
+2026-10-07 18:48:07,155 - root - INFO - FRAME START ID: 22
+ 36%|███▋      | 4/11 [00:00<00:00, 12.04it/s]2026-10-07 18:48:07,238 - root - INFO - FRAME START ID: 22
+2026-10-07 18:48:07,320 - root - INFO - FRAME START ID: 22
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.05it/s]2026-10-07 18:48:07,403 - root - INFO - FRAME START ID: 22
+2026-10-07 18:48:07,487 - root - INFO - FRAME START ID: 22
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.03it/s]2026-10-07 18:48:07,570 - root - INFO - FRAME START ID: 22
+2026-10-07 18:48:07,653 - root - INFO - FRAME START ID: 22
+ 91%|█████████ | 10/11 [00:00<00:00, 12.06it/s]2026-10-07 18:48:07,735 - root - INFO - FRAME START ID: 22
+100%|██████████| 11/11 [00:00<00:00, 12.17it/s]
+2026-10-07 18:48:10,370 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:48:11,038 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:48:11,038 - root - INFO - FRAME START ID: 22
+2026-10-07 18:48:11,336 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:48:11,337 - root - INFO - FRAME START ID: 24
+ 17%|█▋        | 1/6 [00:00<00:00,  9.37it/s]2026-10-07 18:48:11,443 - root - INFO - FRAME START ID: 24
+ 33%|███▎      | 2/6 [00:00<00:00,  9.73it/s]2026-10-07 18:48:11,544 - root - INFO - FRAME START ID: 24
+2026-10-07 18:48:11,643 - root - INFO - FRAME START ID: 24
+ 67%|██████▋   | 4/6 [00:00<00:00,  9.90it/s]2026-10-07 18:48:11,744 - root - INFO - FRAME START ID: 24
+ 83%|████████▎ | 5/6 [00:00<00:00,  9.93it/s]2026-10-07 18:48:11,844 - root - INFO - FRAME START ID: 24
+100%|██████████| 6/6 [00:00<00:00, 10.00it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:48:11,937 - root - INFO - FRAME START ID: 24
+2026-10-07 18:48:12,022 - root - INFO - FRAME START ID: 24
+ 18%|█▊        | 2/11 [00:00<00:00, 11.89it/s]2026-10-07 18:48:12,106 - root - INFO - FRAME START ID: 24
+2026-10-07 18:48:12,190 - root - INFO - FRAME START ID: 24
+ 36%|███▋      | 4/11 [00:00<00:00, 11.91it/s]2026-10-07 18:48:12,273 - root - INFO - FRAME START ID: 24
+2026-10-07 18:48:12,357 - root - INFO - FRAME START ID: 24
+ 55%|█████▍    | 6/11 [00:00<00:00, 11.91it/s]2026-10-07 18:48:12,441 - root - INFO - FRAME START ID: 24
+2026-10-07 18:48:12,525 - root - INFO - FRAME START ID: 24
+ 73%|███████▎  | 8/11 [00:00<00:00, 11.91it/s]2026-10-07 18:48:12,609 - root - INFO - FRAME START ID: 24
+2026-10-07 18:48:12,693 - root - INFO - FRAME START ID: 24
+ 91%|█████████ | 10/11 [00:00<00:00, 11.93it/s]2026-10-07 18:48:12,776 - root - INFO - FRAME START ID: 24
+100%|██████████| 11/11 [00:00<00:00, 12.05it/s]
+2026-10-07 18:48:14,600 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:48:15,262 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:48:15,262 - root - INFO - FRAME START ID: 24
+2026-10-07 18:48:15,561 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:48:15,562 - root - INFO - FRAME START ID: 26
+ 17%|█▋        | 1/6 [00:00<00:00,  9.45it/s]2026-10-07 18:48:15,668 - root - INFO - FRAME START ID: 26
+ 33%|███▎      | 2/6 [00:00<00:00,  9.73it/s]2026-10-07 18:48:15,768 - root - INFO - FRAME START ID: 26
+ 50%|█████     | 3/6 [00:00<00:00,  9.81it/s]2026-10-07 18:48:15,869 - root - INFO - FRAME START ID: 26
+ 67%|██████▋   | 4/6 [00:00<00:00,  9.86it/s]2026-10-07 18:48:15,970 - root - INFO - FRAME START ID: 26
+ 83%|████████▎ | 5/6 [00:00<00:00,  9.88it/s]2026-10-07 18:48:16,071 - root - INFO - FRAME START ID: 26
+100%|██████████| 6/6 [00:00<00:00,  9.92it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:48:16,167 - root - INFO - FRAME START ID: 26
+2026-10-07 18:48:16,253 - root - INFO - FRAME START ID: 26
+ 18%|█▊        | 2/11 [00:00<00:00, 11.74it/s]2026-10-07 18:48:16,338 - root - INFO - FRAME START ID: 26
+2026-10-07 18:48:16,423 - root - INFO - FRAME START ID: 26
+ 36%|███▋      | 4/11 [00:00<00:00, 11.77it/s]2026-10-07 18:48:16,507 - root - INFO - FRAME START ID: 26
+2026-10-07 18:48:16,592 - root - INFO - FRAME START ID: 26
+ 55%|█████▍    | 6/11 [00:00<00:00, 11.76it/s]2026-10-07 18:48:16,677 - root - INFO - FRAME START ID: 26
+2026-10-07 18:48:16,762 - root - INFO - FRAME START ID: 26
+ 73%|███████▎  | 8/11 [00:00<00:00, 11.77it/s]2026-10-07 18:48:16,847 - root - INFO - FRAME START ID: 26
+2026-10-07 18:48:16,932 - root - INFO - FRAME START ID: 26
+ 91%|█████████ | 10/11 [00:00<00:00, 11.76it/s]2026-10-07 18:48:17,018 - root - INFO - FRAME START ID: 26
+100%|██████████| 11/11 [00:00<00:00, 11.89it/s]
+2026-10-07 18:48:25,874 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:48:26,574 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:48:26,574 - root - INFO - FRAME START ID: 26
+2026-10-07 18:48:28,638 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 43196) closed
+2026-10-07 18:49:09,533 - websockets.server - INFO - connection open
+2026-10-07 18:49:09,533 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 60996) opened
+2026-10-07 18:49:35,251 - root - INFO - ******************* Reset server ******************
+2026-10-07 18:49:35,251 - root - INFO - Reset.
+2026-10-07 18:49:35,396 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:49:35,532 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:35,624 - root - INFO - FRAME START ID: 0
+ 33%|███▎      | 2/6 [00:00<00:00, 11.17it/s]2026-10-07 18:49:35,712 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:35,798 - root - INFO - FRAME START ID: 0
+ 67%|██████▋   | 4/6 [00:00<00:00, 11.42it/s]2026-10-07 18:49:35,884 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:35,970 - root - INFO - FRAME START ID: 0
+100%|██████████| 6/6 [00:00<00:00, 11.53it/s]100%|██████████| 6/6 [00:00<00:00, 11.47it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:49:36,056 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:36,131 - root - INFO - FRAME START ID: 0
+ 18%|█▊        | 2/11 [00:00<00:00, 13.37it/s]2026-10-07 18:49:36,206 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:36,280 - root - INFO - FRAME START ID: 0
+ 36%|███▋      | 4/11 [00:00<00:00, 13.21it/s]2026-10-07 18:49:36,358 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:36,433 - root - INFO - FRAME START ID: 0
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.29it/s]2026-10-07 18:49:36,508 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:36,582 - root - INFO - FRAME START ID: 0
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.35it/s]2026-10-07 18:49:36,657 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:36,731 - root - INFO - FRAME START ID: 0
+ 91%|█████████ | 10/11 [00:00<00:00, 13.25it/s]2026-10-07 18:49:36,809 - root - INFO - FRAME START ID: 0
+100%|██████████| 11/11 [00:00<00:00, 13.26it/s]
+2026-10-07 18:49:37,941 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:49:38,423 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:49:38,423 - root - INFO - FRAME START ID: 0
+2026-10-07 18:49:38,706 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:49:38,707 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:38,802 - root - INFO - FRAME START ID: 2
+ 33%|███▎      | 2/6 [00:00<00:00, 10.79it/s]2026-10-07 18:49:38,892 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:38,982 - root - INFO - FRAME START ID: 2
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.97it/s]2026-10-07 18:49:39,073 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:39,163 - root - INFO - FRAME START ID: 2
+100%|██████████| 6/6 [00:00<00:00, 11.07it/s]100%|██████████| 6/6 [00:00<00:00, 11.02it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:49:39,252 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:39,327 - root - INFO - FRAME START ID: 2
+ 18%|█▊        | 2/11 [00:00<00:00, 13.28it/s]2026-10-07 18:49:39,402 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:39,477 - root - INFO - FRAME START ID: 2
+ 36%|███▋      | 4/11 [00:00<00:00, 13.35it/s]2026-10-07 18:49:39,552 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:39,627 - root - INFO - FRAME START ID: 2
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.34it/s]2026-10-07 18:49:39,702 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:39,776 - root - INFO - FRAME START ID: 2
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.36it/s]2026-10-07 18:49:39,851 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:39,926 - root - INFO - FRAME START ID: 2
+ 91%|█████████ | 10/11 [00:00<00:00, 13.30it/s]2026-10-07 18:49:40,003 - root - INFO - FRAME START ID: 2
+100%|██████████| 11/11 [00:00<00:00, 13.32it/s]
+2026-10-07 18:49:41,902 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:49:42,595 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:49:42,595 - root - INFO - FRAME START ID: 2
+2026-10-07 18:49:42,909 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:49:42,910 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:43,006 - root - INFO - FRAME START ID: 4
+ 33%|███▎      | 2/6 [00:00<00:00, 10.78it/s]2026-10-07 18:49:43,096 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:43,185 - root - INFO - FRAME START ID: 4
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.99it/s]2026-10-07 18:49:43,275 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:43,365 - root - INFO - FRAME START ID: 4
+100%|██████████| 6/6 [00:00<00:00, 11.11it/s]100%|██████████| 6/6 [00:00<00:00, 11.05it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:49:43,453 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:43,530 - root - INFO - FRAME START ID: 4
+ 18%|█▊        | 2/11 [00:00<00:00, 13.16it/s]2026-10-07 18:49:43,605 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:43,681 - root - INFO - FRAME START ID: 4
+ 36%|███▋      | 4/11 [00:00<00:00, 13.21it/s]2026-10-07 18:49:43,756 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:43,832 - root - INFO - FRAME START ID: 4
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.23it/s]2026-10-07 18:49:43,907 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:43,983 - root - INFO - FRAME START ID: 4
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.24it/s]2026-10-07 18:49:44,058 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:44,133 - root - INFO - FRAME START ID: 4
+ 91%|█████████ | 10/11 [00:00<00:00, 13.25it/s]2026-10-07 18:49:44,209 - root - INFO - FRAME START ID: 4
+100%|██████████| 11/11 [00:00<00:00, 13.26it/s]
+2026-10-07 18:49:46,092 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:49:46,749 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:49:46,749 - root - INFO - FRAME START ID: 4
+2026-10-07 18:49:47,033 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:49:47,033 - root - INFO - FRAME START ID: 6
+ 17%|█▋        | 1/6 [00:00<00:00,  7.99it/s]2026-10-07 18:49:47,159 - root - INFO - FRAME START ID: 6
+2026-10-07 18:49:47,250 - root - INFO - FRAME START ID: 6
+ 50%|█████     | 3/6 [00:00<00:00,  9.94it/s]2026-10-07 18:49:47,342 - root - INFO - FRAME START ID: 6
+2026-10-07 18:49:47,434 - root - INFO - FRAME START ID: 6
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.40it/s]2026-10-07 18:49:47,526 - root - INFO - FRAME START ID: 6
+100%|██████████| 6/6 [00:00<00:00, 10.31it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:49:47,616 - root - INFO - FRAME START ID: 6
+2026-10-07 18:49:47,691 - root - INFO - FRAME START ID: 6
+ 18%|█▊        | 2/11 [00:00<00:00, 13.18it/s]2026-10-07 18:49:47,767 - root - INFO - FRAME START ID: 6
+2026-10-07 18:49:47,843 - root - INFO - FRAME START ID: 6
+ 36%|███▋      | 4/11 [00:00<00:00, 13.18it/s]2026-10-07 18:49:47,919 - root - INFO - FRAME START ID: 6
+2026-10-07 18:49:47,995 - root - INFO - FRAME START ID: 6
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.19it/s]2026-10-07 18:49:48,071 - root - INFO - FRAME START ID: 6
+2026-10-07 18:49:48,147 - root - INFO - FRAME START ID: 6
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.17it/s]2026-10-07 18:49:48,223 - root - INFO - FRAME START ID: 6
+2026-10-07 18:49:48,299 - root - INFO - FRAME START ID: 6
+ 91%|█████████ | 10/11 [00:00<00:00, 13.16it/s]2026-10-07 18:49:48,375 - root - INFO - FRAME START ID: 6
+100%|██████████| 11/11 [00:00<00:00, 13.20it/s]
+2026-10-07 18:49:50,253 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:49:50,926 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:49:50,926 - root - INFO - FRAME START ID: 6
+2026-10-07 18:49:51,245 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:49:51,246 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:51,344 - root - INFO - FRAME START ID: 8
+ 33%|███▎      | 2/6 [00:00<00:00, 10.48it/s]2026-10-07 18:49:51,437 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:51,528 - root - INFO - FRAME START ID: 8
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.73it/s]2026-10-07 18:49:51,620 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:51,714 - root - INFO - FRAME START ID: 8
+100%|██████████| 6/6 [00:00<00:00, 10.85it/s]100%|██████████| 6/6 [00:00<00:00, 10.79it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:49:51,802 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:51,880 - root - INFO - FRAME START ID: 8
+ 18%|█▊        | 2/11 [00:00<00:00, 12.99it/s]2026-10-07 18:49:51,956 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:52,033 - root - INFO - FRAME START ID: 8
+ 36%|███▋      | 4/11 [00:00<00:00, 13.00it/s]2026-10-07 18:49:52,110 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:52,187 - root - INFO - FRAME START ID: 8
+ 55%|█████▍    | 6/11 [00:00<00:00, 13.00it/s]2026-10-07 18:49:52,264 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:52,341 - root - INFO - FRAME START ID: 8
+ 73%|███████▎  | 8/11 [00:00<00:00, 13.00it/s]2026-10-07 18:49:52,418 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:52,495 - root - INFO - FRAME START ID: 8
+ 91%|█████████ | 10/11 [00:00<00:00, 12.96it/s]2026-10-07 18:49:52,573 - root - INFO - FRAME START ID: 8
+100%|██████████| 11/11 [00:00<00:00, 13.02it/s]
+2026-10-07 18:49:54,401 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:49:55,062 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:49:55,062 - root - INFO - FRAME START ID: 8
+2026-10-07 18:49:55,366 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:49:55,370 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:55,467 - root - INFO - FRAME START ID: 10
+ 33%|███▎      | 2/6 [00:00<00:00, 10.50it/s]2026-10-07 18:49:55,560 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:55,653 - root - INFO - FRAME START ID: 10
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.69it/s]2026-10-07 18:49:55,745 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:55,837 - root - INFO - FRAME START ID: 10
+100%|██████████| 6/6 [00:00<00:00, 10.91it/s]100%|██████████| 6/6 [00:00<00:00, 10.82it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:49:55,925 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:56,002 - root - INFO - FRAME START ID: 10
+ 18%|█▊        | 2/11 [00:00<00:00, 12.95it/s]2026-10-07 18:49:56,079 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:56,156 - root - INFO - FRAME START ID: 10
+ 36%|███▋      | 4/11 [00:00<00:00, 12.95it/s]2026-10-07 18:49:56,234 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:56,312 - root - INFO - FRAME START ID: 10
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.88it/s]2026-10-07 18:49:56,390 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:56,468 - root - INFO - FRAME START ID: 10
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.86it/s]2026-10-07 18:49:56,546 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:56,623 - root - INFO - FRAME START ID: 10
+ 91%|█████████ | 10/11 [00:00<00:00, 12.86it/s]2026-10-07 18:49:56,701 - root - INFO - FRAME START ID: 10
+100%|██████████| 11/11 [00:00<00:00, 12.93it/s]
+2026-10-07 18:49:58,552 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:49:59,204 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:49:59,204 - root - INFO - FRAME START ID: 10
+2026-10-07 18:49:59,493 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:49:59,493 - root - INFO - FRAME START ID: 12
+2026-10-07 18:49:59,591 - root - INFO - FRAME START ID: 12
+ 33%|███▎      | 2/6 [00:00<00:00, 10.57it/s]2026-10-07 18:49:59,683 - root - INFO - FRAME START ID: 12
+2026-10-07 18:49:59,774 - root - INFO - FRAME START ID: 12
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.75it/s]2026-10-07 18:49:59,866 - root - INFO - FRAME START ID: 12
+2026-10-07 18:49:59,958 - root - INFO - FRAME START ID: 12
+100%|██████████| 6/6 [00:00<00:00, 10.96it/s]100%|██████████| 6/6 [00:00<00:00, 10.88it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:50:00,045 - root - INFO - FRAME START ID: 12
+2026-10-07 18:50:00,124 - root - INFO - FRAME START ID: 12
+ 18%|█▊        | 2/11 [00:00<00:00, 12.82it/s]2026-10-07 18:50:00,201 - root - INFO - FRAME START ID: 12
+2026-10-07 18:50:00,279 - root - INFO - FRAME START ID: 12
+ 36%|███▋      | 4/11 [00:00<00:00, 12.83it/s]2026-10-07 18:50:00,357 - root - INFO - FRAME START ID: 12
+2026-10-07 18:50:00,434 - root - INFO - FRAME START ID: 12
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.85it/s]2026-10-07 18:50:00,512 - root - INFO - FRAME START ID: 12
+2026-10-07 18:50:00,590 - root - INFO - FRAME START ID: 12
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.86it/s]2026-10-07 18:50:00,668 - root - INFO - FRAME START ID: 12
+2026-10-07 18:50:00,745 - root - INFO - FRAME START ID: 12
+ 91%|█████████ | 10/11 [00:00<00:00, 12.83it/s]2026-10-07 18:50:00,824 - root - INFO - FRAME START ID: 12
+100%|██████████| 11/11 [00:00<00:00, 12.88it/s]
+2026-10-07 18:50:02,666 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:50:03,340 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:50:03,340 - root - INFO - FRAME START ID: 12
+2026-10-07 18:50:03,628 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:50:03,628 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:03,728 - root - INFO - FRAME START ID: 14
+ 33%|███▎      | 2/6 [00:00<00:00, 10.28it/s]2026-10-07 18:50:03,823 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:03,918 - root - INFO - FRAME START ID: 14
+ 67%|██████▋   | 4/6 [00:00<00:00, 10.43it/s]2026-10-07 18:50:04,013 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:04,108 - root - INFO - FRAME START ID: 14
+100%|██████████| 6/6 [00:00<00:00, 10.65it/s]100%|██████████| 6/6 [00:00<00:00, 10.57it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:50:04,196 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:04,275 - root - INFO - FRAME START ID: 14
+ 18%|█▊        | 2/11 [00:00<00:00, 12.73it/s]2026-10-07 18:50:04,354 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:04,432 - root - INFO - FRAME START ID: 14
+ 36%|███▋      | 4/11 [00:00<00:00, 12.75it/s]2026-10-07 18:50:04,510 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:04,589 - root - INFO - FRAME START ID: 14
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.73it/s]2026-10-07 18:50:04,668 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:04,747 - root - INFO - FRAME START ID: 14
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.73it/s]2026-10-07 18:50:04,825 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:04,903 - root - INFO - FRAME START ID: 14
+ 91%|█████████ | 10/11 [00:00<00:00, 12.72it/s]2026-10-07 18:50:04,982 - root - INFO - FRAME START ID: 14
+100%|██████████| 11/11 [00:00<00:00, 12.80it/s]
+2026-10-07 18:50:06,811 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:50:07,484 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:50:07,485 - root - INFO - FRAME START ID: 14
+2026-10-07 18:50:07,773 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:50:07,774 - root - INFO - FRAME START ID: 16
+ 17%|█▋        | 1/6 [00:00<00:00,  9.93it/s]2026-10-07 18:50:07,874 - root - INFO - FRAME START ID: 16
+2026-10-07 18:50:07,970 - root - INFO - FRAME START ID: 16
+ 50%|█████     | 3/6 [00:00<00:00, 10.31it/s]2026-10-07 18:50:08,066 - root - INFO - FRAME START ID: 16
+2026-10-07 18:50:08,161 - root - INFO - FRAME START ID: 16
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.38it/s]2026-10-07 18:50:08,257 - root - INFO - FRAME START ID: 16
+100%|██████████| 6/6 [00:00<00:00, 10.47it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:50:08,347 - root - INFO - FRAME START ID: 16
+2026-10-07 18:50:08,427 - root - INFO - FRAME START ID: 16
+ 18%|█▊        | 2/11 [00:00<00:00, 12.55it/s]2026-10-07 18:50:08,507 - root - INFO - FRAME START ID: 16
+2026-10-07 18:50:08,586 - root - INFO - FRAME START ID: 16
+ 36%|███▋      | 4/11 [00:00<00:00, 12.54it/s]2026-10-07 18:50:08,666 - root - INFO - FRAME START ID: 16
+2026-10-07 18:50:08,746 - root - INFO - FRAME START ID: 16
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.54it/s]2026-10-07 18:50:08,826 - root - INFO - FRAME START ID: 16
+2026-10-07 18:50:08,905 - root - INFO - FRAME START ID: 16
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.55it/s]2026-10-07 18:50:08,985 - root - INFO - FRAME START ID: 16
+2026-10-07 18:50:09,064 - root - INFO - FRAME START ID: 16
+ 91%|█████████ | 10/11 [00:00<00:00, 12.56it/s]2026-10-07 18:50:09,144 - root - INFO - FRAME START ID: 16
+100%|██████████| 11/11 [00:00<00:00, 12.64it/s]
+2026-10-07 18:50:13,595 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:50:14,264 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:50:14,264 - root - INFO - FRAME START ID: 16
+2026-10-07 18:50:14,573 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:50:14,574 - root - INFO - FRAME START ID: 18
+ 17%|█▋        | 1/6 [00:00<00:00,  9.47it/s]2026-10-07 18:50:14,680 - root - INFO - FRAME START ID: 18
+2026-10-07 18:50:14,775 - root - INFO - FRAME START ID: 18
+ 50%|█████     | 3/6 [00:00<00:00, 10.17it/s]2026-10-07 18:50:14,871 - root - INFO - FRAME START ID: 18
+2026-10-07 18:50:14,967 - root - INFO - FRAME START ID: 18
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.28it/s]2026-10-07 18:50:15,064 - root - INFO - FRAME START ID: 18
+100%|██████████| 6/6 [00:00<00:00, 10.36it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:50:15,154 - root - INFO - FRAME START ID: 18
+2026-10-07 18:50:15,234 - root - INFO - FRAME START ID: 18
+ 18%|█▊        | 2/11 [00:00<00:00, 12.43it/s]2026-10-07 18:50:15,315 - root - INFO - FRAME START ID: 18
+2026-10-07 18:50:15,395 - root - INFO - FRAME START ID: 18
+ 36%|███▋      | 4/11 [00:00<00:00, 12.46it/s]2026-10-07 18:50:15,475 - root - INFO - FRAME START ID: 18
+2026-10-07 18:50:15,555 - root - INFO - FRAME START ID: 18
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.46it/s]2026-10-07 18:50:15,635 - root - INFO - FRAME START ID: 18
+2026-10-07 18:50:15,715 - root - INFO - FRAME START ID: 18
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.47it/s]2026-10-07 18:50:15,796 - root - INFO - FRAME START ID: 18
+2026-10-07 18:50:15,876 - root - INFO - FRAME START ID: 18
+ 91%|█████████ | 10/11 [00:00<00:00, 12.47it/s]2026-10-07 18:50:15,956 - root - INFO - FRAME START ID: 18
+100%|██████████| 11/11 [00:00<00:00, 12.56it/s]
+2026-10-07 18:50:25,128 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:50:25,796 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:50:25,796 - root - INFO - FRAME START ID: 18
+2026-10-07 18:50:26,092 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:50:26,093 - root - INFO - FRAME START ID: 20
+ 17%|█▋        | 1/6 [00:00<00:00,  9.82it/s]2026-10-07 18:50:26,195 - root - INFO - FRAME START ID: 20
+2026-10-07 18:50:26,291 - root - INFO - FRAME START ID: 20
+ 50%|█████     | 3/6 [00:00<00:00, 10.21it/s]2026-10-07 18:50:26,388 - root - INFO - FRAME START ID: 20
+2026-10-07 18:50:26,484 - root - INFO - FRAME START ID: 20
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.29it/s]2026-10-07 18:50:26,581 - root - INFO - FRAME START ID: 20
+100%|██████████| 6/6 [00:00<00:00, 10.38it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:50:26,671 - root - INFO - FRAME START ID: 20
+2026-10-07 18:50:26,755 - root - INFO - FRAME START ID: 20
+ 18%|█▊        | 2/11 [00:00<00:00, 12.14it/s]2026-10-07 18:50:26,836 - root - INFO - FRAME START ID: 20
+2026-10-07 18:50:26,918 - root - INFO - FRAME START ID: 20
+ 36%|███▋      | 4/11 [00:00<00:00, 12.21it/s]2026-10-07 18:50:26,999 - root - INFO - FRAME START ID: 20
+2026-10-07 18:50:27,081 - root - INFO - FRAME START ID: 20
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.24it/s]2026-10-07 18:50:27,162 - root - INFO - FRAME START ID: 20
+2026-10-07 18:50:27,244 - root - INFO - FRAME START ID: 20
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.25it/s]2026-10-07 18:50:27,325 - root - INFO - FRAME START ID: 20
+2026-10-07 18:50:27,407 - root - INFO - FRAME START ID: 20
+ 91%|█████████ | 10/11 [00:00<00:00, 12.15it/s]2026-10-07 18:50:27,492 - root - INFO - FRAME START ID: 20
+100%|██████████| 11/11 [00:00<00:00, 12.28it/s]
+2026-10-07 18:50:36,761 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:50:37,439 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:50:37,439 - root - INFO - FRAME START ID: 20
+2026-10-07 18:50:37,739 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:50:37,739 - root - INFO - FRAME START ID: 22
+ 17%|█▋        | 1/6 [00:00<00:00,  9.63it/s]2026-10-07 18:50:37,843 - root - INFO - FRAME START ID: 22
+2026-10-07 18:50:37,942 - root - INFO - FRAME START ID: 22
+ 50%|█████     | 3/6 [00:00<00:00, 10.01it/s]2026-10-07 18:50:38,040 - root - INFO - FRAME START ID: 22
+2026-10-07 18:50:38,139 - root - INFO - FRAME START ID: 22
+ 83%|████████▎ | 5/6 [00:00<00:00, 10.08it/s]2026-10-07 18:50:38,237 - root - INFO - FRAME START ID: 22
+100%|██████████| 6/6 [00:00<00:00, 10.17it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:50:38,330 - root - INFO - FRAME START ID: 22
+2026-10-07 18:50:38,414 - root - INFO - FRAME START ID: 22
+ 18%|█▊        | 2/11 [00:00<00:00, 12.02it/s]2026-10-07 18:50:38,496 - root - INFO - FRAME START ID: 22
+2026-10-07 18:50:38,579 - root - INFO - FRAME START ID: 22
+ 36%|███▋      | 4/11 [00:00<00:00, 12.08it/s]2026-10-07 18:50:38,661 - root - INFO - FRAME START ID: 22
+2026-10-07 18:50:38,743 - root - INFO - FRAME START ID: 22
+ 55%|█████▍    | 6/11 [00:00<00:00, 12.11it/s]2026-10-07 18:50:38,826 - root - INFO - FRAME START ID: 22
+2026-10-07 18:50:38,908 - root - INFO - FRAME START ID: 22
+ 73%|███████▎  | 8/11 [00:00<00:00, 12.12it/s]2026-10-07 18:50:38,991 - root - INFO - FRAME START ID: 22
+2026-10-07 18:50:39,073 - root - INFO - FRAME START ID: 22
+ 91%|█████████ | 10/11 [00:00<00:00, 12.13it/s]2026-10-07 18:50:39,155 - root - INFO - FRAME START ID: 22
+100%|██████████| 11/11 [00:00<00:00, 12.23it/s]
+2026-10-07 18:50:48,256 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:50:48,961 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:50:48,961 - root - INFO - FRAME START ID: 22
+2026-10-07 18:50:49,269 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:50:49,270 - root - INFO - FRAME START ID: 24
+ 17%|█▋        | 1/6 [00:00<00:00,  8.94it/s]2026-10-07 18:50:49,382 - root - INFO - FRAME START ID: 24
+2026-10-07 18:50:49,481 - root - INFO - FRAME START ID: 24
+ 50%|█████     | 3/6 [00:00<00:00,  9.77it/s]2026-10-07 18:50:49,580 - root - INFO - FRAME START ID: 24
+2026-10-07 18:50:49,679 - root - INFO - FRAME START ID: 24
+ 83%|████████▎ | 5/6 [00:00<00:00,  9.94it/s]2026-10-07 18:50:49,778 - root - INFO - FRAME START ID: 24
+100%|██████████| 6/6 [00:00<00:00, 10.00it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:50:49,870 - root - INFO - FRAME START ID: 24
+2026-10-07 18:50:49,955 - root - INFO - FRAME START ID: 24
+ 18%|█▊        | 2/11 [00:00<00:00, 11.87it/s]2026-10-07 18:50:50,039 - root - INFO - FRAME START ID: 24
+2026-10-07 18:50:50,123 - root - INFO - FRAME START ID: 24
+ 36%|███▋      | 4/11 [00:00<00:00, 11.90it/s]2026-10-07 18:50:50,207 - root - INFO - FRAME START ID: 24
+2026-10-07 18:50:50,290 - root - INFO - FRAME START ID: 24
+ 55%|█████▍    | 6/11 [00:00<00:00, 11.92it/s]2026-10-07 18:50:50,374 - root - INFO - FRAME START ID: 24
+2026-10-07 18:50:50,458 - root - INFO - FRAME START ID: 24
+ 73%|███████▎  | 8/11 [00:00<00:00, 11.92it/s]2026-10-07 18:50:50,542 - root - INFO - FRAME START ID: 24
+2026-10-07 18:50:50,625 - root - INFO - FRAME START ID: 24
+ 91%|█████████ | 10/11 [00:00<00:00, 11.93it/s]2026-10-07 18:50:50,709 - root - INFO - FRAME START ID: 24
+100%|██████████| 11/11 [00:00<00:00, 12.05it/s]
+2026-10-07 18:50:58,584 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:50:59,250 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:50:59,250 - root - INFO - FRAME START ID: 24
+2026-10-07 18:50:59,572 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:50:59,573 - root - INFO - FRAME START ID: 26
+ 17%|█▋        | 1/6 [00:00<00:00,  9.41it/s]2026-10-07 18:50:59,679 - root - INFO - FRAME START ID: 26
+ 33%|███▎      | 2/6 [00:00<00:00,  9.71it/s]2026-10-07 18:50:59,780 - root - INFO - FRAME START ID: 26
+ 50%|█████     | 3/6 [00:00<00:00,  9.81it/s]2026-10-07 18:50:59,881 - root - INFO - FRAME START ID: 26
+ 67%|██████▋   | 4/6 [00:00<00:00,  9.86it/s]2026-10-07 18:50:59,981 - root - INFO - FRAME START ID: 26
+ 83%|████████▎ | 5/6 [00:00<00:00,  9.79it/s]2026-10-07 18:51:00,085 - root - INFO - FRAME START ID: 26
+100%|██████████| 6/6 [00:00<00:00,  9.91it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:51:00,179 - root - INFO - FRAME START ID: 26
+2026-10-07 18:51:00,264 - root - INFO - FRAME START ID: 26
+ 18%|█▊        | 2/11 [00:00<00:00, 11.77it/s]2026-10-07 18:51:00,349 - root - INFO - FRAME START ID: 26
+2026-10-07 18:51:00,434 - root - INFO - FRAME START ID: 26
+ 36%|███▋      | 4/11 [00:00<00:00, 11.80it/s]2026-10-07 18:51:00,518 - root - INFO - FRAME START ID: 26
+2026-10-07 18:51:00,604 - root - INFO - FRAME START ID: 26
+ 55%|█████▍    | 6/11 [00:00<00:00, 11.77it/s]2026-10-07 18:51:00,689 - root - INFO - FRAME START ID: 26
+2026-10-07 18:51:00,774 - root - INFO - FRAME START ID: 26
+ 73%|███████▎  | 8/11 [00:00<00:00, 11.79it/s]2026-10-07 18:51:00,858 - root - INFO - FRAME START ID: 26
+2026-10-07 18:51:00,943 - root - INFO - FRAME START ID: 26
+ 91%|█████████ | 10/11 [00:00<00:00, 11.80it/s]2026-10-07 18:51:01,028 - root - INFO - FRAME START ID: 26
+100%|██████████| 11/11 [00:00<00:00, 11.92it/s]
+2026-10-07 18:51:10,367 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:51:11,040 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:51:11,040 - root - INFO - FRAME START ID: 26
+2026-10-07 18:51:11,346 - root - INFO - ################# Infer One Chunk #################
+  0%|          | 0/6 [00:00<?, ?it/s]2026-10-07 18:51:11,347 - root - INFO - FRAME START ID: 28
+ 17%|█▋        | 1/6 [00:00<00:00,  9.43it/s]2026-10-07 18:51:11,453 - root - INFO - FRAME START ID: 28
+ 33%|███▎      | 2/6 [00:00<00:00,  9.64it/s]2026-10-07 18:51:11,555 - root - INFO - FRAME START ID: 28
+ 50%|█████     | 3/6 [00:00<00:00,  9.73it/s]2026-10-07 18:51:11,657 - root - INFO - FRAME START ID: 28
+ 67%|██████▋   | 4/6 [00:00<00:00,  9.76it/s]2026-10-07 18:51:11,759 - root - INFO - FRAME START ID: 28
+ 83%|████████▎ | 5/6 [00:00<00:00,  9.79it/s]2026-10-07 18:51:11,860 - root - INFO - FRAME START ID: 28
+100%|██████████| 6/6 [00:00<00:00,  9.86it/s]
+  0%|          | 0/11 [00:00<?, ?it/s]2026-10-07 18:51:11,956 - root - INFO - FRAME START ID: 28
+2026-10-07 18:51:12,042 - root - INFO - FRAME START ID: 28
+ 18%|█▊        | 2/11 [00:00<00:00, 11.63it/s]2026-10-07 18:51:12,128 - root - INFO - FRAME START ID: 28
+2026-10-07 18:51:12,214 - root - INFO - FRAME START ID: 28
+ 36%|███▋      | 4/11 [00:00<00:00, 11.65it/s]2026-10-07 18:51:12,299 - root - INFO - FRAME START ID: 28
+2026-10-07 18:51:12,385 - root - INFO - FRAME START ID: 28
+ 55%|█████▍    | 6/11 [00:00<00:00, 11.65it/s]2026-10-07 18:51:12,471 - root - INFO - FRAME START ID: 28
+2026-10-07 18:51:12,558 - root - INFO - FRAME START ID: 28
+ 73%|███████▎  | 8/11 [00:00<00:00, 11.56it/s]2026-10-07 18:51:12,646 - root - INFO - FRAME START ID: 28
+2026-10-07 18:51:12,736 - root - INFO - FRAME START ID: 28
+ 91%|█████████ | 10/11 [00:00<00:00, 11.42it/s]2026-10-07 18:51:12,825 - root - INFO - FRAME START ID: 28
+100%|██████████| 11/11 [00:00<00:00, 11.65it/s]
+2026-10-07 18:51:22,036 - root - INFO - ################# Compute KV Cache #################
+2026-10-07 18:51:22,704 - root - INFO - get KV cache obs: torch.Size([1, 48, 2, 24, 20]) torch.Size([1, 30, 2, 16, 1])
+2026-10-07 18:51:22,705 - root - INFO - FRAME START ID: 28
+2026-10-07 18:51:24,720 - utils.Simple_Remote_Infer.deploy.websocket_policy_server - INFO - Connection from ('127.0.0.1', 60996) closed
+2026-10-07 18:56:23,242 - websockets.server - INFO - server closing
+2026-10-07 18:56:23,243 - websockets.server - INFO - server closed
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/opt/miniconda3/envs/lingbot-va/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+[rank0]:     return _run_code(code, main_globals, None,
+[rank0]:   File "/opt/miniconda3/envs/lingbot-va/lib/python3.10/runpy.py", line 86, in _run_code
+[rank0]:     exec(code, run_globals)
+[rank0]:   File "/data2/takuya/lingbot-va/wan_va/wan_va_server.py", line 908, in <module>
+[rank0]:     parser.add_argument(
+[rank0]:   File "/data2/takuya/lingbot-va/wan_va/wan_va_server.py", line 902, in main
+[rank0]:     parser.add_argument(
+[rank0]:   File "/data2/takuya/lingbot-va/wan_va/wan_va_server.py", line 873, in run
+[rank0]:     init_distributed(world_size, local_rank, rank)
+[rank0]:   File "/data2/takuya/lingbot-va/wan_va/utils/sever_utils.py", line 73, in run_async_server_mode
+[rank0]:     model_server.serve_forever()
+[rank0]:   File "/data2/takuya/lingbot-va/wan_va/utils/Simple_Remote_Infer/deploy/websocket_policy_server.py", line 35, in serve_forever
+[rank0]:     asyncio.run(self.run())
+[rank0]:   File "/opt/miniconda3/envs/lingbot-va/lib/python3.10/asyncio/runners.py", line 44, in run
+[rank0]:     return loop.run_until_complete(main)
+[rank0]:   File "/opt/miniconda3/envs/lingbot-va/lib/python3.10/asyncio/base_events.py", line 636, in run_until_complete
+[rank0]:     self.run_forever()
+[rank0]:   File "/opt/miniconda3/envs/lingbot-va/lib/python3.10/asyncio/base_events.py", line 603, in run_forever
+[rank0]:     self._run_once()
+[rank0]:   File "/opt/miniconda3/envs/lingbot-va/lib/python3.10/asyncio/base_events.py", line 1871, in _run_once
+[rank0]:     event_list = self._selector.select(timeout)
+[rank0]:   File "/opt/miniconda3/envs/lingbot-va/lib/python3.10/selectors.py", line 469, in select
+[rank0]:     fd_event_list = self._selector.poll(timeout, max_ev)
+[rank0]: KeyboardInterrupt
+[rank0]:[W1007 18:56:23.188568107 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())

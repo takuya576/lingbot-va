@@ -184,6 +184,20 @@ class YamKinematics:
         """6 arm joints (rad) -> 4x4 transform of `grasp_site` in the arm base frame."""
         return self._kin.fk(self._pad(q6))
 
+    def arm_joint_range(self) -> np.ndarray:
+        """(6, 2) [lo, hi] of the arm joints, rad, already widened by `limit_buffer`.
+
+        The range the hardware enforces (see ARM_LIMIT_BUFFER): `command_joint_pos`
+        silently clips anything outside it, so a client commanding joints directly
+        should clip to this itself and know when it did.
+        """
+        import mujoco  # noqa: E402  (already loaded by the i2rt kinematics)
+        model = self._kin._configuration.model
+        ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+               for name in ARM_JOINT_NAMES]
+        assert min(ids) >= 0, f"arm joints {ARM_JOINT_NAMES} not all in {self._xml_path}"
+        return np.asarray(model.jnt_range[ids], dtype=np.float64)
+
     def ik_robust(self, target_pose: np.ndarray, seed_q6: Optional[np.ndarray] = None,
                   fallback_seeds: Tuple[np.ndarray, ...] = None,
                   **kwargs) -> Tuple[bool, np.ndarray, bool]:

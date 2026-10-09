@@ -4,9 +4,14 @@
 Kept for reproducing and resuming the runs trained on the original 57-episode
 recording; `va_yam_place_cube_train_cfg` trains on the re-recorded 55-episode dataset.
 
-Mirrors `va_yam_cover_blocks_train_cfg` (see there for why LoRA rather than a full
-finetune, and for the LR/warmup rationale). What differs is the dataset and everything
-the stride-4 latents imply -- see `va_yam_place_cube_pre_cfg`, which this inherits.
+Mirrors `va_yam_place_cube_train_cfg` (see there for why LoRA rather than a full
+finetune, and for the weight-decay/warmup rationale). What differs is the dataset and
+its held-out split.
+
+Inherits from `va_yam_place_cube_pre_cfg`, the config that serves this run's
+checkpoints: action_per_frame, norm_stat, the EEF channel layout and the camera setup
+all come from there, so training and serving cannot drift apart. Only the
+initialization, the dataset and the optimization settings are training-specific.
 """
 import os
 
@@ -19,10 +24,6 @@ va_yam_place_cube_pre_train_cfg = EasyDict(
     __name__='Config: VA yam place_cube_pre train')
 va_yam_place_cube_pre_train_cfg.update(va_yam_place_cube_pre_cfg)
 
-# action_per_frame, norm_stat, the EEF channel layout and the camera setup all come
-# from va_yam_place_cube_pre_cfg, so training and serving cannot drift apart. Only the
-# dataset and the optimization settings are training-specific.
-
 # va_yam_place_cube_pre_cfg points this at the LoRA-merged serving directory, which is
 # the *output* of this run. Training must start from the original un-adapted base
 # instead -- LoRA injection asserts it (wan_va/modules/lora.py:223), and resuming
@@ -30,13 +31,8 @@ va_yam_place_cube_pre_train_cfg.update(va_yam_place_cube_pre_cfg)
 va_yam_place_cube_pre_train_cfg.wan22_pretrained_model_name_or_path = (
     'Pretrained_models/lingbot-va-posttrain-robotwin')
 
-# The SINGLE task directory, not the yam-real-world-lingbot-va parent that
-# va_yam_cover_blocks_train_cfg uses. construct_lerobot_multi_processor discovers
-# sub-datasets by recursively walking dataset_path for meta/info.json
-# (lerobot_latent_dataset.py:48-49) with no task filter, so pointing at the parent
-# would silently sweep in cover_blocks -- whose latents are stride 6, and whose
-# actions are normalized against different quantiles. norm_stat is global config,
-# read once per run (lerobot_latent_dataset.py:149-150), never per-task from disk.
+# The SINGLE task directory, not the yam-real-world-lingbot-va parent; see
+# va_yam_place_cube_train_cfg for why.
 va_yam_place_cube_pre_train_cfg.dataset_path = (
     '/home/takuya/lingbot-va/Datasets/yam-real-world-lingbot-va/place_cube_pre')
 va_yam_place_cube_pre_train_cfg.empty_emb_path = os.path.join(
@@ -85,9 +81,8 @@ va_yam_place_cube_pre_train_cfg.num_steps = 3000
 
 # packed_tokens = (k+1)*(240+8*stride), rounded up to a multiple of 128
 # (lerobot_latent_dataset.py:287-306). At stride 4 the 57 place_cube_pre episodes span
-# 4624 tokens (259 frames) to 11152 (651 frames), so 11264 admits every one of them
-# -- less than half what cover_blocks needs at stride 6. Sizing this too small does
-# not fail loudly: __getitem__ SKIPS to the next sample rather than asserting
-# (lerobot_latent_dataset.py:308-320), so over-long episodes would just vanish from
-# training while their neighbours got sampled twice.
+# 4624 tokens (259 frames) to 11152 (651 frames), so 11264 admits every one of them.
+# Sizing this too small does not fail loudly: __getitem__ SKIPS to the next sample
+# rather than asserting (lerobot_latent_dataset.py:308-320), so over-long episodes
+# would just vanish from training while their neighbours got sampled twice.
 va_yam_place_cube_pre_train_cfg.max_seq_len = 11264

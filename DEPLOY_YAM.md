@@ -70,9 +70,9 @@ df -h /data2
 rm -rf /data2/takuya/lingbot-va/example/yam_cover_blocks/real/*
 ```
 
-`save_root` is hardcoded in `script/run_launch_va_server_sync.sh` — passing
-`--save_root` loses to argparse last-wins because the script appends its own after your
-overrides.
+`save_root` is `example/<CONFIG_NAME>` unless you set `SAVE_ROOT=` — passing
+`--save_root` as an override loses to argparse last-wins because the script appends its
+own after your overrides.
 
 **Check the serving model is assembled:**
 
@@ -94,8 +94,11 @@ script/assemble_yam_serving_model.sh \
 
 ```bash
 cd /data2/takuya/lingbot-va
-NGPU=1 CONFIG_NAME=yam_cover_blocks bash script/run_launch_va_server_sync.sh
+NGPU=1 GPU=1 CONFIG_NAME=yam_cover_blocks bash script/run_launch_va_server_sync.sh
 ```
+
+`GPU` picks the physical device (default 0). GPU 0 is shared with other users' jobs —
+check `nvidia-smi` and pick one with ~40 GB free.
 
 Wait for it to listen on **29536** (`run_launch_va_server_sync.sh` defines `PORT` but
 never forwards it, so the config value wins). Loading 10.2 GB takes a while.
@@ -307,12 +310,48 @@ same per-chunk latency buys a markedly worse duty cycle than it did on cover_blo
 |---|---|
 | actuator / position-loop response | **3** (measured from the dataset itself; kp=80 → 3, kp=40 → 2, kp=10 → 5) |
 | `_smooth_command` interpolation | 0.9 — `_SMOOTH_DUTY` *is* the lag in control periods |
-| client obs staleness | 0–1 |
+| client obs staleness | 0–3 at `--obs-hz 10` (one poll interval; ~1.5 on average) |
 | camera frame age + transport | ~1 |
 
 Only about two steps are pipeline, and the rest was equally present in training. Lowering
 `_SMOOTH_DUTY` shortens the second term (0.9 → 0.6 buys 10 ms), but the push rate to the
 arms rises correspondingly and the hardware only consumes ~150–200 Hz.
+
+**The same staleness reaches the world model.** Keyframes are taken every
+`action_per_frame/4` steps from the latest polled observation, so where training spaced
+them exactly 200 ms (cover_blocks) or 133 ms (place_cube) apart, at `--obs-hz 10` each one
+is up to 100 ms late and the spacing snaps to the poll grid: on place_cube consecutive
+keyframes land 100 or 200 ms apart, never 133. A poll slower than the keyframe rate
+repeats frames outright. The end-of-rollout summary prints the measured spacing against that nominal
+value (from raiden's capture timestamps), and warns per chunk if a keyframe repeated the
+previous frame. Both go into `results.json` as `keyframe_gap_ms`.
+
+**End-of-rollout metrics in `results.json`.** `tracking_rad` is `[p50, p99, max]` of the
+lag-compensated `track` above, in the units `--max-tracking-error` uses — the tracking
+figure to read. `arms.commanded_vs_measured` is time-aligned and **not** lag-compensated,
+like the plot, so it mostly measures how far the arm moves during its 5–6 steps of lag.
+`predicted` and `commanded` stop at the last dispatched step, also when a safeguard
+halted mid-chunk.
+
+`served` records the inference settings the policy server reported at connect time
+(`attn_window`, guidance scales, denoising steps, `frame0_action`). The filename tag
+carries only the step counts, and results.json accumulates every session against a
+checkpoint, so this is the only way to tell rollouts at different settings apart.
+`null` means the server predates that field. `frame0_action` is how the first chunk
+treats latent frame 0's action slot:
+
+| value | first chunk's frame-0 action slot | first-step offset (EEF place_cube, held-out, open loop) |
+|---|---|---|
+| `null` | conditioned on normalized zeros, a mid-range pose ~18 cm from the anchor | 20–41 mm |
+| `train_pad` | held to training's pad at timestep 0 | 7–15 mm, mostly backward |
+| `denoised` (default) | denoised with the rest of the chunk, as in training | ~2–4 mm |
+
+`train_pad`'s backward bias put the idle arm's targets behind its folded home pose,
+which the arm cannot reach (rollout 31). The setting applies to joint-space checkpoints
+too (§9.5), with the same default; it has not been measured there. Switch at launch with
+`bash script/run_launch_va_server_sync.sh --frame0-action train_pad`; the default comes
+from `shared_config.frame0_action`. Open-loop results carry the same field, but
+`open_loop/results.json` is overwritten on each run: give an A/B run its own `--out`.
 
 ---
 
@@ -422,6 +461,49 @@ All 74 episodes were trained on; there is no held-out set. A successful rollout
 demonstrates that the **pipeline** works end to end — adapter loaded, norm stats right,
 observation pipeline correct, conversion sound, transport stable. It is **not** a
 success-rate estimate and says nothing about generalization.
+
+---
+
+## 9.5 Joint-space checkpoints (experimental, alongside EEF)
+
+Everything above describes the EEF path, which is unchanged and remains the default
+(`action_space = 'eef'` in `shared_config`). A checkpoint trained with
+`action_space = 'joint'` emits **absolute** 14-dim joints
+`[left q6, left grip, right q6, right grip]` in the base model's joint slots (channels
+14:20 / 21:27 + grippers 28/29), never relativized.
+
+```bash
+# data: raw joints + videos hardlinked from --src + latents COPIED from the EEF
+# conversion (independent files, so re-extracting either side cannot change the other)
+python script/convert_yam_to_lingbot_va.py --action-space joint \
+    --src Datasets/yam-real-world-lerobot/place_cube \
+    --dst Datasets/yam-real-world-lingbot-va-joint/place_cube \
+    --latents-from Datasets/yam-real-world-lingbot-va/place_cube --norm-stat-episodes 0-49
+# train / assemble / serve
+CONFIG_NAME=yam_place_cube_joint_train bash script/run_va_posttrain.sh
+script/assemble_yam_serving_model.sh train_out/yam_place_cube_joint/<run>/checkpoints/checkpoint_step_N \
+    Pretrained_models/lingbot-va-posttrain-yam-place-cube-joint
+CONFIG_NAME=yam_place_cube_joint bash script/run_launch_va_server_sync.sh
+# score on the held-out episodes -- note the -joint --dst
+python script/eval_yam_openloop.py --src Datasets/yam-real-world-lerobot/place_cube \
+    --dst Datasets/yam-real-world-lingbot-va-joint/place_cube --episodes 50 51 52 53 54
+```
+
+The server reports `action_space` in its handshake and both clients pick their
+converter from it (`make_converter`), so nothing is passed by hand. What changes:
+
+- **No IK.** Layer 3 (branch switch) cannot fire; `--max-jump-rad` is ignored. The
+  anchor is still latched, but only for the plots.
+- **Joint-limit clipping instead.** Arm joints are clipped to the widened MuJoCo
+  limits the hardware enforces anyway; `joint_limit_clipped` and
+  `max_joint_overshoot_rad` in `stats` say how often and by how much.
+- Layers 1, 2 (non-finite actions), 4–7 are identical.
+- Plots and EEF metrics are in the same anchor-relative EEF frame as an EEF run (FK of
+  the predicted joints), so the two compare directly; the open-loop eval adds
+  `joint_err_rad` per arm.
+
+Keep joint datasets outside `Datasets/yam-real-world-lingbot-va/`: the cover_blocks
+train config sweeps that whole directory.
 
 ---
 

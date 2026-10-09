@@ -1,51 +1,71 @@
 # Copyright 2024-2025 The Robbyant Team Authors. All rights reserved.
 """Inference config for the YAM bimanual arms on the `place_cube` task.
 
+This is the config the policy server must be launched with to serve a place_cube
+checkpoint (`CONFIG_NAME=yam_place_cube`). Serving a YAM checkpoint under the
+`robotwin` config would load RoboTwin's q01/q99 and silently denormalize every action
+against the wrong quantiles -- the failure mode is plausible-looking motion, not an
+error.
+
 This is the re-recorded 55-episode `place_cube` dataset. The original 57-episode
 recording and the checkpoints trained on it are served by `va_yam_place_cube_pre_cfg`.
 
-Separate from `va_yam_cover_blocks_cfg` (which is `cover_blocks`) for one reason: latent frame
-stride. `place_cube` episodes are 193-657 frames (6.4-21.9s), a third of the length
-of `cover_blocks`', so their latents are extracted at stride 4 rather than stride 6
-and a whole episode still fits comfortably in one action_config segment. Stride is
-not a free knob -- it fixes `action_per_frame == 4 * stride`, and that field is a
-single global the server uses to shape the actions it GENERATES. One config cannot
-serve both strides, so the two tasks get one config each.
+`place_cube` episodes are 193-657 frames (6.4-21.9s), so their latents are extracted
+at stride 4 and a whole episode still fits comfortably in one action_config segment.
+Stride is not a free knob -- it fixes `action_per_frame == 4 * stride`, and that field
+is a single global the server uses to shape the actions it GENERATES, so one config
+serves exactly one stride. script/extract_va_latents.py must therefore be run with
+`--stride 4`: its default is 5fps, i.e. stride 6 on this 30fps source, and nothing
+downstream checks the stride of the cached latents against action_per_frame.
 
-script/extract_va_latents.py must therefore be run with `--stride 4`: its default is
-5fps, i.e. stride 6 on this 30fps source, and nothing downstream checks the stride of
-the cached latents against action_per_frame.
+YAM joint angles are FK-converted to the same 16-dim bimanual EEF layout as robotwin
+(see script/convert_yam_to_lingbot_va.py), so `used_action_channel_ids`, `env_type`
+('robotwin_tshape') and `obs_cam_keys` take va_robotwin_cfg's values. The model emits
+EEF pose, not joints. Converting its output into YAM joint commands (un-relativize
+against the rollout anchor, then IK on `grasp_site`) is `yam_bridge/action_convert.py`.
 
-Everything else -- the 16-dim bimanual EEF layout, `used_action_channel_ids`,
-`env_type` ('robotwin_tshape'), `obs_cam_keys`, the camera geometry -- is inherited
-from `va_yam_cover_blocks_cfg` unchanged, since both tasks were recorded on the same arms and
-converted by the same FK path (script/convert_yam_to_lingbot_va.py).
+Every setting is stated here; only the universal defaults in shared_config.py come
+from elsewhere. `va_yam_place_cube_train_cfg` inherits from this config, so training
+and serving cannot drift apart.
 """
 from easydict import EasyDict
-from .va_yam_cover_blocks_cfg import va_yam_cover_blocks_cfg
+
+from .shared_config import va_shared_cfg
 
 va_yam_place_cube_cfg = EasyDict(__name__='Config: VA yam place_cube')
-va_yam_place_cube_cfg.update(va_yam_cover_blocks_cfg)
+va_yam_place_cube_cfg.update(va_shared_cfg)
 
 # Built by script/assemble_yam_serving_model.sh from a place_cube training checkpoint.
 va_yam_place_cube_cfg.wan22_pretrained_model_name_or_path = (
     'Pretrained_models/lingbot-va-posttrain-yam-place-cube')
+va_yam_place_cube_cfg.infer_mode = 'server'
 
-# Invariant: action_per_frame == round(ori_fps / target_fps) * 4. Latents are
-# extracted at stride 4 on a 30fps source (7.5fps), so 16 -- not va_yam_cover_blocks_cfg's 24.
-# Stated explicitly rather than left to va_robotwin_cfg's identical default, because
-# the value is only correct here by way of the stride, not by inheritance.
-va_yam_place_cube_cfg.action_per_frame = 16
+# --- Embodiment and action layout ---
+va_yam_place_cube_cfg.env_type = 'robotwin_tshape'
+va_yam_place_cube_cfg.height = 256
+va_yam_place_cube_cfg.width = 320
+va_yam_place_cube_cfg.obs_cam_keys = [
+    'observation.images.cam_high', 'observation.images.cam_left_wrist',
+    'observation.images.cam_right_wrist'
+]
+va_yam_place_cube_cfg.action_dim = 30
+va_yam_place_cube_cfg.action_space = 'eef'
+# [left EEF pose 0:7, left gripper 28, right EEF pose 7:14, right gripper 29]
+va_yam_place_cube_cfg.used_action_channel_ids = list(range(0, 7)) + list(
+    range(28, 29)) + list(range(7, 14)) + list(range(29, 30))
+inverse_used_action_channel_ids = [
+    len(va_yam_place_cube_cfg.used_action_channel_ids)
+] * va_yam_place_cube_cfg.action_dim
+for i, j in enumerate(va_yam_place_cube_cfg.used_action_channel_ids):
+    inverse_used_action_channel_ids[j] = i
+va_yam_place_cube_cfg.inverse_used_action_channel_ids = inverse_used_action_channel_ids
 
-va_yam_place_cube_cfg.num_inference_steps = 5
-va_yam_place_cube_cfg.video_exec_step = -1  # -1 means "run the full video schedule."
-va_yam_place_cube_cfg.action_num_inference_steps = 10
-
+va_yam_place_cube_cfg.action_norm_method = 'quantiles'
 # Recomputed q01/q99 from place_cube itself (script/convert_yam_to_lingbot_va.py), on
 # the relative-pose-transformed action -- matching how _action_post_process applies
 # get_relative_pose before normalization for env_type == 'robotwin_tshape'. These are
-# NOT interchangeable with va_yam_cover_blocks_cfg's: serving a place_cube checkpoint against
-# cover_blocks' quantiles denormalizes every action wrongly without raising.
+# NOT interchangeable with another task's or recording's: serving a checkpoint against
+# the wrong quantiles denormalizes every action wrongly without raising.
 #
 # Fitted on EPISODES 0-49 ONLY (--norm-stat-episodes 0-49), matching
 # va_yam_place_cube_train_cfg.episode_subset. Episodes 50-54 are held out, and
@@ -69,3 +89,23 @@ va_yam_place_cube_cfg.norm_stat = {
         0.23916610878538516, 0.566232960392461, 0.14781434245087266, 1.0
     ] + [0.] * 14 + [1.0, 0.9934257864952087],
 }
+
+# Actions are NOT downsampled with the video: _action_post_process keeps them at the
+# raw 30fps and packs frame_stride*4 of them per latent frame, so 16 at stride 4. The
+# dataloader takes this from the data, but wan_va_server.py shapes the actions it
+# GENERATES from this field, so a stale value would desync the closed loop: the world
+# model would advance by one latent frame while the robot executed a different span
+# of time before the next observation.
+# Invariant: action_per_frame == round(ori_fps / target_fps) * 4.
+va_yam_place_cube_cfg.action_per_frame = 16
+va_yam_place_cube_cfg.frame_chunk_size = 2
+va_yam_place_cube_cfg.attn_window = 72
+
+# --- Sampling ---
+va_yam_place_cube_cfg.guidance_scale = 5
+va_yam_place_cube_cfg.action_guidance_scale = 1
+va_yam_place_cube_cfg.num_inference_steps = 5
+va_yam_place_cube_cfg.video_exec_step = -1  # -1 means "run the full video schedule."
+va_yam_place_cube_cfg.action_num_inference_steps = 10
+va_yam_place_cube_cfg.snr_shift = 5.0
+va_yam_place_cube_cfg.action_snr_shift = 1.0

@@ -22,8 +22,8 @@ Run in the `lingbot-va` conda env (needs torch/diffusers/transformers + a GPU).
 Usage:
     conda activate lingbot-va
     python script/extract_va_latents.py \
-        --dataset-path Datasets/yam-real-world-lingbot-va/cover_blocks \
-        --config-name yam_cover_blocks_train
+        --dataset-path Datasets/yam-real-world-lingbot-va/place_cube \
+        --config-name yam_place_cube_train --stride 4
 """
 import argparse
 import json
@@ -100,8 +100,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset-path", required=True,
                      help="Path to the converted per-task dataset, e.g. "
-                          "Datasets/yam-real-world-lingbot-va/cover_blocks")
-    ap.add_argument("--config-name", default="yam_cover_blocks_train",
+                          "Datasets/yam-real-world-lingbot-va/place_cube")
+    ap.add_argument("--config-name", default="yam_place_cube_train",
                      help="wan_va config to source wan22_pretrained_model_name_or_path, "
                           "height/width, obs_cam_keys, env_type from")
     sampling = ap.add_mutually_exclusive_group()

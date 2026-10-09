@@ -4,10 +4,15 @@
 Closes the loop between two servers:
 
     raiden `rd serve --action-type joint`   cameras + measured joints, and the arms
-    wan_va policy server (CONFIG_NAME=yam_cover_blocks)  predicts EEF-pose action chunks
+    wan_va policy server (CONFIG_NAME=yam_place_cube)  predicts EEF-pose action chunks
 
 and converts between them with `yam_bridge.action_convert`, which turns the model's
-relative end-effector poses into absolute YAM joint commands via IK.
+relative end-effector poses into absolute YAM joint commands via IK. A checkpoint
+trained with `action_space = 'joint'` (e.g. CONFIG_NAME=yam_place_cube_joint) emits
+absolute joints instead; the server says so in its handshake, and the client then
+only clips them to the joint limits -- no IK, so no IK branch-switch gate. Everything
+else here (slew limit, tracking, artifacts) is identical, and the plots stay in EEF
+space via FK so the two kinds of checkpoint compare directly.
 
 Run in the raiden venv, which has chiral, mujoco/mink and websockets. All three
 processes, in order::
@@ -15,7 +20,7 @@ processes, in order::
     # 1. policy server (listens on 29536 -- run_launch_va_server_sync.sh defines PORT
     #    but never forwards it). Point --save_root at scratch: _reset writes
     #    latents_*.pt / actions_*.pt / obs_data_*.pt per step, unbounded.
-    NGPU=1 CONFIG_NAME=yam_cover_blocks bash script/run_launch_va_server_sync.sh
+    NGPU=1 CONFIG_NAME=yam_place_cube bash script/run_launch_va_server_sync.sh
 
     # 2. robot server. 480x640 is the resolution the policy was trained at, and
     #    --max-joint-delta 0.35 is measured, not guessed: the recorded demonstrations
@@ -96,10 +101,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from yam_bridge.action_convert import (  # noqa: E402
     BIMANUAL_DOF, DEFAULT_I2RT_ROOT, YamActionConverter, joints14_to_eef16,
-    relativize_action16,
+    make_converter, relativize_action16,
 )
 from yam_bridge.eval_meta import (  # noqa: E402
-    artifact_stem, eval_out_dir, inference_param_tag, next_rollout_index,
+    artifact_stem, eval_out_dir, next_rollout_index, resolve_served,
 )
 from yam_bridge.eval_viz import (  # noqa: E402
     ARMS, plot_trajectories, rotation_error_deg, save_imagination,
@@ -178,6 +183,9 @@ def new_record() -> dict:
     return {
         "rollout": 0,      # index within the checkpoint's whole history, not this run
         "chunks": 0, "steps": 0, "halt_reason": None, "stats": {}, "lags": [],
+        "track": [],       # lag-compensated tracking error per keyframe, rad
+        "keyframe_gaps_ms": [],  # capture-time spacing of consecutive keyframes
+        "keyframe_nominal_ms": None,  # the spacing training used
         "bounds": [],
         "pred_rel": [],    # model output, already anchor-relative
         "cmd_abs": [],     # post-IK, post-slew joints -> FK -> absolute
@@ -202,10 +210,11 @@ def finalize_record(record: dict, conv: YamActionConverter) -> dict:
                        "measured": np.zeros((0, 16)), "measured_steps": []})
         return record
     cmd = to_anchor_relative(np.asarray(record["cmd_abs"]), anchor)
-    # Truncated to a common length: an interrupt mid-chunk leaves more predicted
-    # actions than commands, and plotting that tail would show a divergence that was
-    # never executed.
-    n = min(len(pred), len(cmd))
+    # Truncated to what was dispatched. Both series are appended a whole chunk at a
+    # time, before its first step goes out, so a safeguard halting mid-chunk -- or a
+    # second Ctrl-C -- leaves them holding steps that never ran, and plotting or
+    # scoring that tail would report motion the arms never made.
+    n = min(len(pred), len(cmd), record["steps"])
     meas = to_anchor_relative(np.asarray(record["meas_abs"]), anchor)
     keep = [i for i, s in enumerate(record["meas_steps"]) if s < n]
     record.update({
@@ -310,14 +319,14 @@ def run_episode(robot, va: VAClient, conv: YamActionConverter, prompt: str,
     # is unwound by an interrupt. Collected unconditionally -- a few arrays against a
     # rollout that already holds the arms for hundreds of ms per chunk. `--video` is
     # the exception: it costs a server-side VAE decode, so it stays opt-in.
-    lags = record["lags"]
+    lags, tracks = record["lags"], record["track"]
     pred_rel, cmd_abs = record["pred_rel"], record["cmd_abs"]
     meas_abs, meas_steps = record["meas_abs"], record["meas_steps"]
     bounds, videos = record["bounds"], record["videos"]
 
     while chunk_i < args.max_chunks and not stopper.stop:
         t_infer = time.perf_counter()
-        got = va.infer(first_obs, want_video=args.video)   # (16, F, N)
+        got = va.infer(first_obs, want_video=args.video)   # (16 or 14, F, N)
         action, imagined = got if args.video else (got, None)
         # The round trip is three unrelated costs, and the server reports the split:
         #   vgen -- denoising the video latents   (num_inference_steps)
@@ -335,16 +344,23 @@ def run_episode(robot, va: VAClient, conv: YamActionConverter, prompt: str,
         infer_ms = (time.perf_counter() - t_infer) * 1e3 - video_ms
         other_ms = infer_ms - vgen_ms - act_ms
 
-        if action.ndim != 3 or action.shape[0] != 16:
-            raise RuntimeError(f"unexpected action shape {action.shape}")
+        if action.ndim != 3 or action.shape[0] != conv.action_dim:
+            raise RuntimeError(f"unexpected action shape {action.shape} for a "
+                               f"{conv.action_space} checkpoint")
         n_per_frame = action.shape[2]
         if n_per_frame % 4 != 0:
             raise RuntimeError(f"action_per_frame {n_per_frame} is not a multiple of 4")
         steps_per_keyframe = n_per_frame // 4
+        record["keyframe_nominal_ms"] = steps_per_keyframe * period * 1e3
 
         # Latent frame 0 of the first chunk is the conditioning frame rebuilt from the
-        # initial observation; its actions are the zero/anchor action and executing
-        # them would lurch the arms. `state` below still gets the full array.
+        # initial observation; its actions are not a command. Under served_metadata's
+        # frame0_action 'train_pad' they are training's pad -- raw zeros: the anchor
+        # translation for an EEF checkpoint, all-zero joints for a joint one, closed
+        # grippers for both; under 'denoised' they are the model's own sample of that
+        # pad. A server without the field used normalized zeros, which decode to
+        # mid-range poses ~18 cm from the anchor. `state` below still gets the full
+        # array.
         start_idx = 1 if first else 0
 
         t_ik = time.perf_counter()
@@ -395,10 +411,11 @@ def run_episode(robot, va: VAClient, conv: YamActionConverter, prompt: str,
         # actually dispatched. `cmds` is post-slew, which is the point of plotting it:
         # predicted-vs-commanded is exactly the distortion IK and the limiter added.
         bounds.append(executed)
-        pred_rel.append(action[:, start_idx:, :].transpose(1, 2, 0).reshape(-1, 16))
+        pred_rel.append(conv.predicted_rel16(action[:, start_idx:, :]))
         cmd_abs.extend(joints14_to_eef16(c, conv.kin_left, conv.kin_right) for c in cmds)
 
         keyframes: List[Dict[str, np.ndarray]] = []
+        keyframe_ts: List[float] = []
         deadline = time.perf_counter()
         max_track = 0.0
 
@@ -407,6 +424,9 @@ def run_episode(robot, va: VAClient, conv: YamActionConverter, prompt: str,
                 robot.put_action(cmd.astype(np.float32))
             history.append(np.asarray(cmd, dtype=np.float64))
             executed += 1
+            # Per step, not per chunk: it is what finalize_record truncates the recorded
+            # series to, and a halt or interrupt can land anywhere in the chunk.
+            record["steps"] = executed
             deadline += period
             time.sleep(max(0.0, deadline - time.perf_counter()))
 
@@ -416,6 +436,11 @@ def run_episode(robot, va: VAClient, conv: YamActionConverter, prompt: str,
                     halt_reason = "no observation from raiden yet"
                     break
                 keyframes.append(build_obs(obs))
+                # raiden stamps each observation with its reference camera's capture
+                # time. Training placed keyframes exactly steps_per_keyframe frames apart;
+                # these come from the latest --obs-hz poll, so their real spacing is what
+                # the world model is actually being shown.
+                keyframe_ts.append(float(getattr(obs, "timestamp", 0.0)))
                 # Meaningless under --dry-run: nothing was commanded, so the arm sits
                 # still while the commands advance and this would always trip.
                 if not args.dry_run:
@@ -438,6 +463,9 @@ def run_episode(robot, va: VAClient, conv: YamActionConverter, prompt: str,
                         window, len(window) - 1, measured_joints(obs),
                         args.max_obs_lag)
                     max_track = max(max_track, track)
+                    # Every sample, dwells included: a flat error curve leaves the lag
+                    # unidentifiable but the error itself valid (tracking_error).
+                    tracks.append(track)
                     if lag is not None:
                         lags.append(lag)
                         # Recorded only when the lag is identifiable. `tracking_error`
@@ -456,6 +484,20 @@ def run_episode(robot, va: VAClient, conv: YamActionConverter, prompt: str,
                                        f"{lag} -- the arm is not following; collision "
                                        "or torque limit?")
                         break
+
+        # Within the chunk only: the gap across a chunk boundary spans the inference
+        # hold, and says nothing about sampling. A zero gap means the poll had not
+        # delivered a new frame, so the world model was shown the same instant twice.
+        # A missing timestamp (0.0) would read as exactly that, so it is skipped.
+        if len(keyframe_ts) > 1 and min(keyframe_ts) > 0:
+            gaps = np.diff(keyframe_ts) * 1e3
+            record["keyframe_gaps_ms"].extend(gaps.tolist())
+            repeats = int((gaps <= 0).sum())
+            if repeats:
+                print(f"  WARNING: {repeats} keyframe(s) repeated the previous frame -- "
+                      f"--obs-hz {args.obs_hz:g} did not deliver a new observation "
+                      f"within {steps_per_keyframe * period * 1e3:.0f} ms. Raise it.",
+                      flush=True)
 
         if halt_reason is not None:
             break
@@ -589,7 +631,9 @@ def write_artifacts(summary: dict, args) -> dict:
         stem = artifact_stem(summary["rollout"], args.param_tag)
         series = [
             {"name": "predicted", "data": pred, "style": {"ls": "--", "lw": 1.4}},
-            {"name": "commanded (IK+slew)", "data": cmd, "style": {"ls": "-", "lw": 1.6}},
+            {"name": ("commanded (IK+slew)" if args.action_space == "eef"
+                      else "commanded (clip+slew)"),
+             "data": cmd, "style": {"ls": "-", "lw": 1.6}},
         ]
         if len(meas):
             series.append({"name": "measured", "data": meas, "t": msteps})
@@ -601,6 +645,8 @@ def write_artifacts(summary: dict, args) -> dict:
                      "lag-compensated (~5-6 steps of pipeline lag expected)")
         metrics["predicted_vs_commanded"] = _series_error(pred, cmd)
         if len(meas):
+            # Time-aligned, NOT lag-compensated, like the plot: mostly how far the arm
+            # moves during its ~5-6 steps of lag. Tracking accuracy is `tracking_rad`.
             metrics["commanded_vs_measured"] = _series_error(cmd, meas, at=msteps)
         if args.video and summary["videos"]:
             save_imagination(summary["videos"],
@@ -616,8 +662,32 @@ def write_artifacts(summary: dict, args) -> dict:
         "lag_p90": pct(summary["lags"], 90) if summary["lags"] else None,
         "n_lag_samples": len(summary["lags"]),
         "n_measured_samples": int(len(meas)),
+        # [p50, p99, max] of the lag-compensated error --max-tracking-error halts on:
+        # the worst arm joint, rad, at the best of the last --max-obs-lag commands.
+        "tracking_rad": ([pct(summary["track"], 50), pct(summary["track"], 99),
+                          float(np.max(summary["track"]))]
+                         if summary["track"] else None),
+        "keyframe_gap_ms": _keyframe_gaps(summary),
         "arms": metrics,
+        # results.json accumulates every session against this checkpoint, and the
+        # filename tag carries only the step counts.
+        "served": args.served_settings,
     }
+
+
+def _keyframe_gaps(summary: dict):
+    """How far apart the keyframes the world model saw really were, vs training.
+
+    Training sampled them exactly `action_per_frame/4` frames apart. Here each is the
+    latest --obs-hz poll, up to one poll interval old, so the spacing jitters around
+    the nominal value by up to that interval either way, and 0 means a repeated frame.
+    """
+    gaps = summary["keyframe_gaps_ms"]
+    if not gaps:
+        return None
+    return {"nominal": summary["keyframe_nominal_ms"],
+            "min": float(np.min(gaps)), "p50": pct(gaps, 50), "max": float(np.max(gaps)),
+            "repeats": int(sum(g <= 0 for g in gaps)), "n": len(gaps)}
 
 
 def main():
@@ -634,13 +704,19 @@ def main():
                          "sampled at the dataset's 30fps, so 30 executes them at the "
                          "rate they were trained at.")
     ap.add_argument("--obs-hz", type=float, default=10.0,
-                    help="Observation stream rate. Keyframes are only needed every "
-                         "200ms; higher just costs bandwidth (~2.8MB per frame at "
-                         "480x640 x3 cameras, uncompressed).")
+                    help="Observation stream rate. A keyframe is taken every "
+                         "action_per_frame/4 control steps (200 ms for cover_blocks, "
+                         "133 ms for place_cube) from the latest polled observation, so "
+                         "it can be up to one poll interval older than the frame "
+                         "training put there -- 100 ms, 3 steps, at 10 Hz. Higher "
+                         "tightens that but costs bandwidth (~2.8MB per frame at "
+                         "480x640 x3 cameras, uncompressed). The measured spacing is "
+                         "printed and saved as keyframe_gap_ms.")
     ap.add_argument("--max-chunks", type=int, default=40,
                     help="Chunk budget per episode (~1.6s of motion each).")
     ap.add_argument("--max-jump-rad", type=float, default=0.2,
-                    help="IK branch-switch threshold; above this the chunk is refused.")
+                    help="IK branch-switch threshold; above this the chunk is refused. "
+                         "EEF checkpoints only: a joint checkpoint has no IK.")
     ap.add_argument("--max-tracking-error", type=float, default=0.45,
                     help="Halt if measured joints diverge from commanded by more than "
                          "this, after lag compensation. The policy cannot see this "
@@ -677,13 +753,15 @@ def main():
                     help="Run the full loop but never send actions to the robot. Still "
                          "reads real observations, so it measures inference latency and "
                          "exercises the whole protocol with the arms untouched.")
-    ap.add_argument("--config-name", default="yam_place_cube",
-                    help="The CONFIG_NAME the policy server was launched with. Used "
-                         "only to locate the checkpoint being served, so that --out "
-                         "defaults under it; it does not change what is evaluated.")
+    ap.add_argument("--config-name", default=None,
+                    help="The CONFIG_NAME the policy server was launched with. The "
+                         "server reports it, so this is only a check that stops the run "
+                         "on a mismatch -- and the identity itself for a server too old "
+                         "to report one. It does not change what is evaluated.")
     ap.add_argument("--checkpoint", default=None,
                     help="Checkpoint directory being served (parent of transformer/). "
-                         "Overrides the symlink resolution from --config-name.")
+                         "Checked against what the server reports it loaded; needed "
+                         "only when the serving directory holds real files, not links.")
     ap.add_argument("--out", default=None,
                     help="Directory for the rollout's trajectory plot, imagination "
                          "video and results.json. Defaults to the checkpoint's "
@@ -715,20 +793,30 @@ def main():
         raise SystemExit("--video and --no-artifacts contradict each other: the video "
                          "is one of the artifacts. Drop one.")
 
-    # Resolved before the arms are touched: a broken serving symlink or a bad
-    # --config-name should stop the run here, not after a rollout has produced results
-    # with nowhere to go.
-    args.param_tag = inference_param_tag(args.config_name)
+    from chiral import PolicyClient  # noqa: E402  (raiden venv only)
+
+    va = VAClient(host=args.va_host, port=args.va_port)
+
+    # Resolved before the arms are touched, from what the policy server says it loaded:
+    # a --config-name or --checkpoint that disagrees with it should stop the run here,
+    # not after a rollout has been filed under the wrong model.
+    served = resolve_served(va.server_metadata, args.config_name, args.checkpoint)
+    print(f"[va] serving {served['config_name']} from "
+          f"{served['checkpoint'] or '<unlinked serving directory>'}")
+    args.param_tag = served['param_tag']
+    args.served_settings = served['settings']
+    print(f"[va] settings {served['settings']}")
+    # The checkpoint decides what its actions are, so the converter follows the server.
+    args.action_space = served['action_space']
+    conv = make_converter(args.action_space, args.i2rt_root,
+                          max_jump_rad=args.max_jump_rad)
+    print(f"[va] action space: {args.action_space} "
+          f"({'IK on EEF poses' if args.action_space == 'eef' else 'joints, no IK'})")
     if args.out is None:
-        args.out = eval_out_dir('closed_loop', config_name=args.config_name,
-                                checkpoint=args.checkpoint)
+        args.out = eval_out_dir('closed_loop', served['checkpoint'])
     if args.save_artifacts:
         print(f"writing artifacts to {args.out}/ as episode_*_{args.param_tag}_*")
 
-    from chiral import PolicyClient  # noqa: E402  (raiden venv only)
-
-    conv = YamActionConverter(args.i2rt_root, max_jump_rad=args.max_jump_rad)
-    va = VAClient(host=args.va_host, port=args.va_port)
     stopper = Stopper()
 
     if args.dry_run:
@@ -793,15 +881,31 @@ def main():
         if summary["halt_reason"]:
             print(f"[rollout {rollout}] HALTED: {summary['halt_reason']}")
         s = summary["stats"]
-        print(f"  IK: {s['ik_failures']} failures, {s['ik_fallbacks']} fallbacks, "
-              f"max residual {s['max_pos_residual_m'] * 1000:.2f}mm / "
-              f"{s['max_ori_residual_rad']:.1e}rad, "
-              f"gripper clipped {s['gripper_clipped']}")
+        if args.action_space == "eef":
+            print(f"  IK: {s['ik_failures']} failures, {s['ik_fallbacks']} fallbacks, "
+                  f"max residual {s['max_pos_residual_m'] * 1000:.2f}mm / "
+                  f"{s['max_ori_residual_rad']:.1e}rad, "
+                  f"gripper clipped {s['gripper_clipped']}")
+        else:
+            print(f"  joints: {s['joint_limit_clipped']}/{s['steps']} steps clipped to "
+                  f"the joint limits (worst overshoot "
+                  f"{s['max_joint_overshoot_rad']:.3f} rad), "
+                  f"gripper clipped {s['gripper_clipped']}")
         lags = summary["lags"]
         if lags:
             print(f"  observation lag: p50={pct(lags, 50):.0f} p90={pct(lags, 90):.0f}"
                   f" steps from {len(lags)} identifiable samples "
                   f"(~5-6 expected at 30 Hz; far above means queueing)")
+        if summary["track"]:
+            t = summary["track"]
+            print(f"  tracking error (lag-compensated): p50={pct(t, 50):.3f} "
+                  f"p99={pct(t, 99):.3f} max={max(t):.3f} rad "
+                  f"(halts above {args.max_tracking_error})")
+        kf = _keyframe_gaps(summary)
+        if kf:
+            print(f"  keyframe spacing: min={kf['min']:.0f} p50={kf['p50']:.0f} "
+                  f"max={kf['max']:.0f} ms vs {kf['nominal']:.0f} ms in training"
+                  + (f", {kf['repeats']} repeated frame(s)" if kf["repeats"] else ""))
     return 0
 
 

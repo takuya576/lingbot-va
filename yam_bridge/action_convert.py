@@ -30,6 +30,12 @@ down to `[0..6, 28, 7..13, 29]`::
 Each arm's pose is in its own base frame -- both in the training data (the converter
 runs a single-arm FK for both arms) and in raiden -- so no bimanual extrinsics are
 involved anywhere in this file.
+
+Checkpoints trained with `action_space = 'joint'` (wan_va/configs/shared_config.py)
+skip all of the above: they emit absolute YAM joints, already in the 14-dim command
+layout, and `YamJointActionConverter` only clips them to the hardware's limits.
+`make_converter` picks between the two from what the policy server reports. Both
+expose `predicted_rel16`, so plots and EEF error metrics read the same either way.
 """
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -160,6 +166,9 @@ class YamActionConverter:
       returns whichever branch it converges to, so seeding from the previous command
       is what keeps the elbow from flipping between adjacent actions.
     """
+
+    action_space = "eef"
+    action_dim = 16   # channels of postprocess_action's output
 
     def __init__(self, i2rt_root: str = DEFAULT_I2RT_ROOT, clip_gripper: bool = True,
                  max_jump_rad: float = 0.2):
@@ -299,3 +308,137 @@ class YamActionConverter:
         if action_cfn.ndim != 3 or action_cfn.shape[0] != 16:
             raise ValueError(f"expected (16, F, N), got {action_cfn.shape}")
         return self.convert_sequence(action_cfn.transpose(1, 2, 0).reshape(-1, 16))
+
+    def predicted_rel16(self, action_cfn: np.ndarray) -> np.ndarray:
+        """(16, F, N) model output -> (F*N, 16) anchor-relative EEF, in execution order.
+
+        What the model asked for, in the frame the plots and EEF metrics use. For this
+        converter that is the model output itself.
+        """
+        return np.asarray(action_cfn, dtype=np.float64).transpose(1, 2, 0).reshape(-1, 16)
+
+
+class YamJointActionConverter:
+    """Model action chunks -> YAM joint commands, for `action_space == 'joint'` checkpoints.
+
+    The model already emits absolute `[left q6, left grip, right q6, right grip]`, the
+    layout raiden's `--action-type joint` takes, so there is no IK, no seed and no
+    branch to switch. What is left is clipping: arm joints to the limits the hardware
+    enforces (it would clip them silently otherwise, and the plot would show motion
+    the arm never made), grippers to [0, 1].
+
+    Same interface as `YamActionConverter`, so callers need not branch. The anchor is
+    still latched, but only to express predictions as anchor-relative EEF for the
+    plots (`predicted_rel16`) -- nothing about the commands depends on it. The IK
+    entries of `stats` stay 0; `unsafe_jumps` in particular is an IK branch switch and
+    cannot happen here. Large steps are left to the client's slew limiter.
+    """
+
+    action_space = "joint"
+    action_dim = BIMANUAL_DOF
+
+    def __init__(self, i2rt_root: str = DEFAULT_I2RT_ROOT, clip_gripper: bool = True,
+                 max_jump_rad: float = 0.2):
+        # FK only: the anchor and predicted_rel16 for plots, and the joint limits.
+        self.kin_left = YamKinematics(i2rt_root)
+        self.kin_right = YamKinematics(i2rt_root)
+        self.clip_gripper = clip_gripper
+        self.max_jump_rad = max_jump_rad   # unused; kept so callers can print it
+        # Both arms load the same XML, so one range serves both.
+        self.joint_range = self.kin_left.arm_joint_range()
+        self.anchor16 = None
+        self.reset_stats()
+
+    def reset_stats(self) -> None:
+        self.stats = {
+            "steps": 0,
+            "ik_failures": 0,
+            "ik_fallbacks": 0,
+            "max_fallback_jump_rad": 0.0,
+            "unsafe_jumps": 0,
+            "gripper_clipped": 0,
+            "max_pos_residual_m": 0.0,
+            "max_ori_residual_rad": 0.0,
+            # Steps with any arm joint outside joint_range, and the worst overshoot.
+            "joint_limit_clipped": 0,
+            "max_joint_overshoot_rad": 0.0,
+        }
+
+    def latch_anchor(self, joints14: np.ndarray) -> np.ndarray:
+        """Latch the anchor used by `predicted_rel16`. Commands do not depend on it."""
+        joints14 = np.asarray(joints14, dtype=np.float64).reshape(-1)
+        if joints14.shape[0] != BIMANUAL_DOF:
+            raise ValueError(f"expected (14,) joints, got {joints14.shape}")
+        self.anchor16 = joints14_to_eef16(joints14, self.kin_left, self.kin_right)
+        return self.anchor16
+
+    def convert_step(self, action14: np.ndarray) -> np.ndarray:
+        """One 14-dim absolute joint action -> (14,) clipped YAM joint command."""
+        action14 = np.asarray(action14, dtype=np.float64).reshape(-1)
+        if action14.shape[0] != BIMANUAL_DOF:
+            raise ValueError(f"expected (14,) action, got {action14.shape}")
+        if not np.all(np.isfinite(action14)):
+            raise ValueError(f"non-finite joint action from the model: {action14}. "
+                             "Check the norm stats and config.")
+        out = action14.astype(np.float32)
+        lo, hi = self.joint_range[:, 0], self.joint_range[:, 1]
+        clipped_any = False
+        for q_slice, grip_idx in ((slice(0, ARM_DOF), ARM_DOF),
+                                  (slice(YAM_DOF, YAM_DOF + ARM_DOF), YAM_DOF + ARM_DOF)):
+            q = action14[q_slice]
+            overshoot = float(np.max(np.maximum(lo - q, q - hi)))
+            if overshoot > 0:
+                clipped_any = True
+                self.stats["max_joint_overshoot_rad"] = max(
+                    self.stats["max_joint_overshoot_rad"], overshoot)
+            out[q_slice] = np.clip(q, lo, hi)
+
+            grip = float(action14[grip_idx])
+            if self.clip_gripper:
+                clipped = min(max(grip, 0.0), 1.0)
+                if clipped != grip:
+                    self.stats["gripper_clipped"] += 1
+                grip = clipped
+            out[grip_idx] = grip
+        self.stats["joint_limit_clipped"] += int(clipped_any)
+        self.stats["steps"] += 1
+        return out
+
+    def convert_sequence(self, actions_t14: np.ndarray) -> np.ndarray:
+        """(T, 14) absolute joint actions -> (T, 14) joint commands."""
+        actions_t14 = np.asarray(actions_t14, dtype=np.float64)
+        if actions_t14.ndim != 2 or actions_t14.shape[1] != BIMANUAL_DOF:
+            raise ValueError(f"expected (T, 14), got {actions_t14.shape}")
+        return np.stack([self.convert_step(a) for a in actions_t14])
+
+    def convert_chunk(self, action_cfn: np.ndarray) -> np.ndarray:
+        """`postprocess_action` output (14, F, N) -> (F*N, 14) in execution order."""
+        action_cfn = np.asarray(action_cfn, dtype=np.float64)
+        if action_cfn.ndim != 3 or action_cfn.shape[0] != BIMANUAL_DOF:
+            raise ValueError(f"expected (14, F, N), got {action_cfn.shape}")
+        return self.convert_sequence(
+            action_cfn.transpose(1, 2, 0).reshape(-1, BIMANUAL_DOF))
+
+    def predicted_rel16(self, action_cfn: np.ndarray) -> np.ndarray:
+        """(14, F, N) model output -> (F*N, 16) anchor-relative EEF, via FK.
+
+        FK of the joints the model asked for, before clipping -- the EEF counterpart of
+        `YamActionConverter.predicted_rel16`, so an EEF and a joint checkpoint plot and
+        score in one frame.
+        """
+        if self.anchor16 is None:
+            raise RuntimeError("latch_anchor() must be called before predicted_rel16()")
+        joints = np.asarray(action_cfn, dtype=np.float64).transpose(1, 2, 0).reshape(
+            -1, BIMANUAL_DOF)
+        abs16 = np.stack([joints14_to_eef16(q, self.kin_left, self.kin_right)
+                          for q in joints])
+        return relativize_action16(np.concatenate([self.anchor16[None], abs16]))[1:]
+
+
+def make_converter(action_space: str, i2rt_root: str = DEFAULT_I2RT_ROOT, **kwargs):
+    """The converter for a checkpoint's `action_space` ('eef' or 'joint')."""
+    classes = {"eef": YamActionConverter, "joint": YamJointActionConverter}
+    if action_space not in classes:
+        raise ValueError(f"unknown action_space {action_space!r}; expected one of "
+                         f"{sorted(classes)}")
+    return classes[action_space](i2rt_root, **kwargs)

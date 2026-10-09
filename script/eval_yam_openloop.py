@@ -24,17 +24,17 @@ place_cube DOES have a held-out set: va_yam_place_cube_train_cfg.episode_subset
 trains on episodes 0-49 only, so evaluating 50-54 is a genuine generalization test. The
 held-out episodes are skipped when building the training metas but remain fully present
 on disk, so nothing here needs to change to read them. (place_cube_pre, the original
-57-episode recording, holds out 50-56 instead: pass --config-name yam_place_cube_pre
-and its own --src/--dst.)
+57-episode recording, holds out 50-56 instead: serve CONFIG_NAME=yam_place_cube_pre
+and pass its own --src/--dst.)
 
 Usage (needs the policy server up:
 NGPU=1 CONFIG_NAME=yam_cover_blocks bash script/run_launch_va_server_sync.sh)::
 
     /data2/takuya/raiden/.venv/bin/python script/eval_yam_openloop.py --episodes 2
 
-    # place_cube held-out set (server launched with CONFIG_NAME=yam_place_cube)
+    # place_cube held-out set (server launched with CONFIG_NAME=yam_place_cube or
+    # yam_place_cube_base)
     /data2/takuya/raiden/.venv/bin/python script/eval_yam_openloop.py \
-        --config-name yam_place_cube \
         --src Datasets/yam-real-world-lerobot/place_cube \
         --dst Datasets/yam-real-world-lingbot-va/place_cube \
         --episodes 50 51 52 53 54
@@ -42,9 +42,20 @@ NGPU=1 CONFIG_NAME=yam_cover_blocks bash script/run_launch_va_server_sync.sh)::
 Output goes to the checkpoint's own position mirrored under eval_out/, e.g.
 eval_out/yam_place_cube/<run>/checkpoints/checkpoint_step_N/open_loop/ -- the leaf
 directory is what separates this from a closed-loop evaluation of the same checkpoint.
---config-name only says which serving directory to follow to find that checkpoint; it
-must match the CONFIG_NAME the server was launched with, or the results get filed under
-the wrong model. --out overrides the whole derivation.
+The checkpoint is the one the server reports it loaded, not one named here, so the
+results cannot be filed under a model other than the one that produced them;
+--config-name and --checkpoint only stop the run if they disagree with that report.
+--out overrides the location, not the check.
+
+--dst must be the dataset the served model was trained on: its norm_stat.json has to
+match the quantiles the server denormalizes with, which ties it to exactly one config.
+A joint-space checkpoint (CONFIG_NAME=yam_place_cube_joint) therefore takes
+--dst Datasets/yam-real-world-lingbot-va-joint/place_cube. It is scored in the same
+EEF frame as the EEF checkpoints -- ground truth by FK of the recorded joints, which
+is exactly what the EEF dataset holds -- plus a joint-space error, which is what that
+model was actually trained on.
+--src/--dst default to cover_blocks, so a place_cube server stops here until they are
+passed.
 """
 import argparse
 import json
@@ -60,10 +71,11 @@ import pyarrow.parquet as pq
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from yam_bridge.action_convert import (  # noqa: E402
-    DEFAULT_I2RT_ROOT, YAM_DOF, YamActionConverter, relativize_action16,
+    DEFAULT_I2RT_ROOT, YAM_DOF, YamActionConverter, joints14_to_eef16, make_converter,
+    relativize_action16,
 )
 from yam_bridge.eval_meta import (  # noqa: E402
-    action_per_frame, artifact_stem, eval_out_dir, inference_param_tag,
+    artifact_stem, eval_out_dir, resolve_served,
 )
 from yam_bridge.eval_viz import (  # noqa: E402
     ARMS, CAM_KEYS, plot_trajectories, rotation_error_deg, save_imagination,
@@ -109,7 +121,13 @@ def evaluate(ep: int, args, va: VAClient, conv: YamActionConverter) -> dict:
     src = os.path.join(args.src, "data", "chunk-000", f"episode_{ep:06d}.parquet")
     dst = os.path.join(args.dst, "data", "chunk-000", f"episode_{ep:06d}.parquet")
     joints14 = read_column(src, "action")
-    gt_rel = relativize_action16(read_column(dst, "action"))
+    if conv.action_space == "eef":
+        gt_rel = relativize_action16(read_column(dst, "action"))
+    else:
+        # The joint dataset's actions are --src's joints, so FK them the way the EEF
+        # conversion did; the EEF scores then mean the same for both kinds of model.
+        gt_rel = relativize_action16(np.stack(
+            [joints14_to_eef16(q, conv.kin_left, conv.kin_right) for q in joints14]))
 
     with open(os.path.join(args.dst, "meta", "episodes.jsonl")) as f:
         meta = {json.loads(l)["episode_index"]: json.loads(l) for l in f}
@@ -137,6 +155,7 @@ def evaluate(ep: int, args, va: VAClient, conv: YamActionConverter) -> dict:
 
     first_obs = frames[0]
     preds, cmds_all, bounds, videos = [], [], [], []
+    pred_joints = []   # joint checkpoints only: raw predicted joints, before clipping
     step = 0
     t_total = 0.0
     t_video = 0.0
@@ -155,21 +174,23 @@ def evaluate(ep: int, args, va: VAClient, conv: YamActionConverter) -> dict:
         t_act += va.last_action_gen_ms / 1e3
         t_total += time.perf_counter() - t0 - va.last_video_decode_ms / 1e3
 
-        # The config only predicts what the server does; this is what it did. A
-        # disagreement means --config-name is not the CONFIG_NAME the server was
-        # launched with, which would also have filed the results under the wrong
-        # checkpoint -- so stop rather than evaluate against the wrong metadata.
+        # The identity the results are filed under only predicts what the server
+        # does; this is what it did. A disagreement means that identity is wrong --
+        # possible only against a server too old to report its own, where it came from
+        # an unverified --config-name -- so stop rather than file under the wrong model.
         if action.shape[2] != apf:
             raise SystemExit(
                 f"server returned action_per_frame={action.shape[2]}, but "
-                f"--config-name {args.config_name} says {apf}. Re-run with the "
-                f"CONFIG_NAME the policy server was launched with.")
+                f"{args.config_name} says {apf}. Re-run with the CONFIG_NAME the "
+                f"policy server was launched with.")
 
         start_idx = 1 if c == 0 else 0
         executed = action[:, start_idx:, :]
         bounds.append(step)   # cumulative control steps before this chunk
-        preds.append(executed.transpose(1, 2, 0).reshape(-1, 16))
+        preds.append(conv.predicted_rel16(executed))
         cmds_all.append(conv.convert_chunk(executed))
+        if conv.action_space == "joint":
+            pred_joints.append(executed.transpose(1, 2, 0).reshape(-1, YAM_DOF * 2))
 
         n_exec = preds[-1].shape[0]
         ks = [step + s for s in range(stride, n_exec + 1, stride)]
@@ -204,7 +225,9 @@ def evaluate(ep: int, args, va: VAClient, conv: YamActionConverter) -> dict:
            "video_gen_ms": t_vgen / n_chunks * 1e3,
            "action_gen_ms": t_act / n_chunks * 1e3,
            "video_decode_ms": t_video / n_chunks * 1e3,
-           "stats": dict(conv.stats), "arms": {}}
+           "stats": dict(conv.stats), "arms": {},
+           # The filename tag carries only the step counts.
+           "served": args.served_settings}
     for arm, (xyz, quat, grip) in ARMS.items():
         terr = np.linalg.norm(pred[:, xyz] - gt[:, xyz], axis=1) * 1000
         rerr = rotation_error_deg(pred[:, quat], gt[:, quat])
@@ -214,6 +237,14 @@ def evaluate(ep: int, args, va: VAClient, conv: YamActionConverter) -> dict:
             "grip_mae": float(np.abs(pred[:, grip] - gt[:, grip]).mean()),
         }
     res["max_step_delta"] = float(np.abs(np.diff(cmds[:, ARM_JOINTS], axis=0)).max())
+    if pred_joints:
+        # Same alignment as the EEF scores: executed action j is ground-truth frame j.
+        jerr = np.abs(np.concatenate(pred_joints)[:n] - joints14[:n])
+        res["joint_err_rad"] = {
+            arm: np.percentile(jerr[:, sl].max(axis=1), [50, 99]).tolist()
+            + [float(jerr[:, sl].max())]
+            for arm, sl in (("left", slice(0, ARM_DOF)),
+                            ("right", slice(YAM_DOF, YAM_DOF + ARM_DOF)))}
 
     os.makedirs(args.out, exist_ok=True)
     tag = f"episode_{ep:06d}"
@@ -236,6 +267,26 @@ def decode_frames_all(dataset_root: str, ep: int, wanted: set) -> Dict[int, Dict
     return {i: {k: per_cam[k][i] for k in CAM_KEYS} for i in wanted}
 
 
+def check_dataset(dst: str, served: dict) -> None:
+    """Stop unless `dst` is the dataset the served model's quantiles were fitted on.
+
+    Nothing else would notice. The protocol runs the same on any recorded episode, and
+    the action_per_frame check in `evaluate` only separates strides, so a place_cube
+    model scored against cover_blocks episodes yields ordinary-looking numbers measuring
+    nothing. Each config's norm_stat matches exactly one dataset's norm_stat.json.
+    """
+    path = os.path.join(dst, "norm_stat.json")
+    with open(path) as f:
+        ds = json.load(f)
+    if not all(np.allclose(np.asarray(ds[k], dtype=np.float64),
+                           np.asarray(served["norm_stat"][k], dtype=np.float64),
+                           rtol=0, atol=1e-9) for k in ("q01", "q99")):
+        raise SystemExit(
+            f"{path} does not match the norm_stat of {served['config_name']}, the "
+            f"config being served: --dst is not the dataset this model was trained on. "
+            f"Pass the matching --src/--dst.")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", default="Datasets/yam-real-world-lerobot/cover_blocks")
@@ -247,13 +298,15 @@ def main():
                     help="Episode indices to evaluate, e.g. --episodes 0 5 42. "
                          "Not a count: these are the episode numbers themselves.")
     ap.add_argument("--max-chunks", type=int, default=20)
-    ap.add_argument("--config-name", default="yam_cover_blocks",
-                    help="The CONFIG_NAME the policy server was launched with. Used "
-                         "only to locate the checkpoint being served, so that --out "
-                         "defaults under it; it does not change what is evaluated.")
+    ap.add_argument("--config-name", default=None,
+                    help="The CONFIG_NAME the policy server was launched with. The "
+                         "server reports it, so this is only a check that stops the run "
+                         "on a mismatch -- and the identity itself for a server too old "
+                         "to report one. It does not change what is evaluated.")
     ap.add_argument("--checkpoint", default=None,
                     help="Checkpoint directory being served (parent of transformer/). "
-                         "Overrides the symlink resolution from --config-name.")
+                         "Checked against what the server reports it loaded; needed "
+                         "only when the serving directory holds real files, not links.")
     ap.add_argument("--out", default=None,
                     help="Output directory. Defaults to the checkpoint's position "
                          "mirrored under eval_out/, plus open_loop/.")
@@ -263,13 +316,6 @@ def main():
                     help="Render the video without the 'imagined'/'ground truth' captions "
                          "and the chunk/frame counters (on by default).")
     args = ap.parse_args()
-
-    args.param_tag = inference_param_tag(args.config_name)
-    args.action_per_frame = action_per_frame(args.config_name)
-    if args.out is None:
-        args.out = eval_out_dir('open_loop', config_name=args.config_name,
-                                checkpoint=args.checkpoint)
-    print(f"writing to {args.out}/ as ep<N>_{args.param_tag}_*")
 
     available = {int(f[len("episode_"):-len(".parquet")])
                  for f in os.listdir(os.path.join(args.src, "data", "chunk-000"))
@@ -285,7 +331,23 @@ def main():
     print(f"connecting to policy server {args.va_host}:{args.va_port} "
           "(blocks until it accepts)...")
     va = VAClient(host=args.va_host, port=args.va_port)
-    conv = YamActionConverter(args.i2rt_root)
+
+    # Filed under what the server says it loaded; --config-name and --checkpoint only
+    # stop the run if they disagree with it.
+    served = resolve_served(va.server_metadata, args.config_name, args.checkpoint)
+    args.config_name = served['config_name']
+    args.param_tag = served['param_tag']
+    args.action_per_frame = served['action_per_frame']
+    args.served_settings = served['settings']
+    print(f"[va] settings {served['settings']}")
+    print(f"[va] serving {served['config_name']} from "
+          f"{served['checkpoint'] or '<unlinked serving directory>'}")
+    check_dataset(args.dst, served)
+    if args.out is None:
+        args.out = eval_out_dir('open_loop', served['checkpoint'])
+    print(f"writing to {args.out}/ as ep<N>_{args.param_tag}_*")
+    conv = make_converter(served['action_space'], args.i2rt_root)
+    print(f"[va] action space: {served['action_space']}")
 
     results = []
     for ep in args.episodes:
@@ -304,9 +366,16 @@ def main():
                   f"{m['trans_mm'][1]:7.1f}/{m['trans_mm'][2]:7.1f} mm   "
                   f"rot {m['rot_deg'][0]:5.1f}/{m['rot_deg'][1]:5.1f}/{m['rot_deg'][2]:5.1f} deg   "
                   f"grip MAE {m['grip_mae']:.3f}")
-        print(f"  IK on model outputs: {s['ik_failures']} failures, "
-              f"{s['ik_fallbacks']} fallbacks, {s['unsafe_jumps']} unsafe jumps, "
-              f"max residual {s['max_pos_residual_m'] * 1000:.2f} mm")
+        if conv.action_space == "eef":
+            print(f"  IK on model outputs: {s['ik_failures']} failures, "
+                  f"{s['ik_fallbacks']} fallbacks, {s['unsafe_jumps']} unsafe jumps, "
+                  f"max residual {s['max_pos_residual_m'] * 1000:.2f} mm")
+        else:
+            for arm, e in r["joint_err_rad"].items():
+                print(f"  {arm:5s} joint err (worst joint) p50/p99/max "
+                      f"{e[0]:.4f}/{e[1]:.4f}/{e[2]:.4f} rad")
+            print(f"  joint limits: {s['joint_limit_clipped']}/{s['steps']} steps "
+                  f"clipped (worst overshoot {s['max_joint_overshoot_rad']:.3f} rad)")
         print(f"  max per-step joint delta: {r['max_step_delta']:.4f} rad "
               f"(sets --max-joint-delta)")
 

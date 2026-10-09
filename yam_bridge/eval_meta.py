@@ -2,9 +2,10 @@
 """What an evaluation needs to know about the model it is evaluating.
 
 Which checkpoint is being served, the settings it is being served at, and therefore
-where the artifacts go and what they are called. The eval scripts talk to the policy
-server over a socket that carries no metadata, so all of it is recovered here from the
-serving directory and the config rather than asked for.
+where the artifacts go and what they are called. The policy server states all of it in
+the websocket handshake (wan_va_server.served_metadata), and `resolve_served` takes it
+from there; the serving directory and the config are only the fallback for a server
+that predates the handshake metadata.
 
 Eval output mirrors the training layout under `eval_out/` rather than living beside the
 weights, so pruning a checkpoint does not take its evaluation with it:
@@ -17,7 +18,11 @@ against a config whose `wan22_pretrained_model_name_or_path` is an assembled ser
 directory (script/assemble_yam_serving_model.sh), and that directory's transformer files
 are symlinks into the training checkpoint. Following one of those links names the
 checkpoint the server is ACTUALLY serving, which is the thing an eval should be filed
-under -- a hand-typed path can silently disagree with what is loaded.
+under -- a hand-typed path can silently disagree with what is loaded. So can a
+hand-typed config name: yam_place_cube and yam_place_cube_base differ only in serving
+directory, so nothing in the action stream gives a mismatch away. That is why the link
+is followed by the server, at load time, and the client's flags are only checked
+against the result.
 """
 import importlib.util
 import os
@@ -104,19 +109,30 @@ def action_per_frame(config_name):
 def inference_param_tag(config_name):
     """`<num_inference_steps>_<video_exec_step>_<action_num_inference_steps>`.
 
-    The three knobs that change what a rollout looks like without changing the
-    checkpoint (wan_va_server.py:465-467), so two evaluations of one checkpoint at
+    The three denoising knobs that change what a rollout looks like without changing
+    the checkpoint (wan_va_server.py:465-467), so two evaluations of one checkpoint at
     different settings land in the same directory under different names instead of
-    overwriting each other.
+    overwriting each other. Not every such setting is here: attn_window, guidance and
+    the frame-0 condition are recorded per result instead (`_SERVED_SETTINGS`), so an
+    open-loop re-run that differs only in those overwrites the previous one unless it
+    is given its own --out.
 
-    Read from the config, because the VA protocol has no metadata call to ask the
-    server with (yam_bridge/va_client.py). That makes it only as accurate as
-    --config-name matching the CONFIG_NAME the server was launched with, and blind to
-    per-launch overrides appended to run_launch_va_server_sync.sh.
+    Read from the config, so only as accurate as `config_name` matching the
+    CONFIG_NAME the server was launched with. `resolve_served` uses the server's own
+    report instead and falls back to this only for a server that predates it.
     """
     cfg = _config(config_name)
     return (f"{cfg.num_inference_steps}_{cfg.video_exec_step}"
             f"_{cfg.action_num_inference_steps}")
+
+
+# Inference settings that change a rollout without changing the checkpoint. Only the
+# first three are in the filename tag; all of them go into every results.json record,
+# since attn_window, guidance and the frame-0 condition have changed between rollouts
+# of one checkpoint before, and nothing else would tell those rollouts apart.
+_SERVED_SETTINGS = ('num_inference_steps', 'video_exec_step',
+                    'action_num_inference_steps', 'attn_window', 'guidance_scale',
+                    'action_guidance_scale', 'frame0_action')
 
 
 def checkpoint_for_serving_dir(serving_dir):
@@ -134,30 +150,100 @@ def checkpoint_for_serving_dir(serving_dir):
             f"{weights} does not resolve.\n"
             f"Re-assemble it: script/assemble_yam_serving_model.sh <checkpoint_dir> "
             f"{serving_dir}")
-    real = os.path.realpath(weights)
-    if real == os.path.abspath(weights):
+    return _checkpoint_for_weights(weights, os.path.realpath(weights))
+
+
+def _checkpoint_for_weights(link, real):
+    """The checkpoint directory `real` lies in, or None if `link` was not a link."""
+    if real is None or real == os.path.abspath(link):
         return None
     return os.path.dirname(os.path.dirname(real))
 
 
-def eval_out_dir(loop, config_name=None, checkpoint=None):
+def resolve_served(server_metadata, config_name=None, checkpoint=None):
+    """Identify the model a connected policy server is serving.
+
+    Returns dict(config_name, checkpoint, param_tag, action_per_frame, action_space,
+    norm_stat, settings), taken from what the server reported in the handshake
+    (VAClient.server_metadata). `checkpoint` is None when the serving directory holds
+    real files rather than links. `settings` maps each of _SERVED_SETTINGS to the
+    server's value, None where an older server did not report it -- unknown, not a
+    default, since the config on disk may have changed since that server launched.
+
+    `config_name` and `checkpoint` are what the caller was told on the command line.
+    Against a server that reports itself they are assertions, and a disagreement stops
+    the run before anything is recorded: the results would otherwise be filed, silently,
+    under a different model's history -- one whose numbering and results.json they
+    would extend. `checkpoint` is still needed to name a serving directory of real
+    files, which has no link to report.
+
+    A server from before the handshake metadata sends nothing. Then `config_name` is
+    the only source and cannot be checked, so it is required rather than defaulted.
+    """
+    served_name = (server_metadata or {}).get('config_name')
+    if served_name is None:
+        if config_name is None:
+            raise SystemExit(
+                "the policy server does not report which config it is serving (it "
+                "predates the handshake metadata). Relaunch it, or pass --config-name "
+                "with the CONFIG_NAME it was launched with.")
+        print(f"  NOTE: the policy server predates handshake metadata, so "
+              f"--config-name {config_name} cannot be verified against it.")
+        if checkpoint is None:
+            checkpoint = checkpoint_for_serving_dir(serving_dir_for_config(config_name))
+        cfg = _config(config_name)
+        return dict(config_name=config_name, checkpoint=checkpoint,
+                    param_tag=inference_param_tag(config_name),
+                    action_per_frame=action_per_frame(config_name),
+                    action_space=cfg.get('action_space', 'eef'),
+                    norm_stat=cfg.norm_stat,
+                    # Unverifiable here for the same reason config_name is. frame0_action
+                    # is not even that: a server this old ignores the setting and
+                    # conditions frame 0 on normalized zeros.
+                    settings={k: (None if k == 'frame0_action' else cfg.get(k))
+                              for k in _SERVED_SETTINGS})
+
+    if config_name is not None and config_name != served_name:
+        raise SystemExit(
+            f"--config-name {config_name}, but the policy server was launched with "
+            f"CONFIG_NAME={served_name}. Drop --config-name to evaluate what is being "
+            f"served, or relaunch the server with the config you meant.")
+
+    m = server_metadata
+    served_ckpt = _checkpoint_for_weights(
+        os.path.join(m['serving_dir'], _SERVED_WEIGHTS), m['transformer_weights'])
+    if checkpoint is None:
+        checkpoint = served_ckpt
+    elif (served_ckpt is not None
+          and os.path.realpath(checkpoint) != os.path.realpath(served_ckpt)):
+        raise SystemExit(
+            f"--checkpoint {checkpoint}, but the policy server loaded {served_ckpt}. "
+            f"Drop --checkpoint to file the results under what is being served.")
+    return dict(config_name=served_name, checkpoint=checkpoint,
+                param_tag=(f"{m['num_inference_steps']}_{m['video_exec_step']}"
+                           f"_{m['action_num_inference_steps']}"),
+                action_per_frame=int(m['action_per_frame']),
+                # Servers from before this field all served EEF checkpoints.
+                action_space=m.get('action_space', 'eef'),
+                # From the config if the server's report predates this field.
+                norm_stat=m.get('norm_stat') or _config(served_name).norm_stat,
+                settings={k: m.get(k) for k in _SERVED_SETTINGS})
+
+
+def eval_out_dir(loop, checkpoint):
     """Directory for one evaluation's artifacts.
 
     `loop` is 'open_loop' or 'closed_loop' and becomes the leaf directory, which is what
     separates the two kinds of evaluation of one checkpoint -- the filenames underneath
     are identical between them, so the parent directory is the distinction.
 
-    `checkpoint` names the checkpoint directory directly; otherwise it is resolved from
-    `config_name`'s serving directory. The returned path mirrors the checkpoint's
-    position under train_out/, so a checkpoint outside that tree (or a serving directory
-    of real files) falls back to its own basename.
+    `checkpoint` is the checkpoint directory, normally `resolve_served`'s. The returned
+    path mirrors its position under train_out/, so a checkpoint outside that tree falls
+    back to its own basename, and None (a serving directory of real files) to
+    eval_out/unlinked/.
     """
     if loop not in ('open_loop', 'closed_loop'):
         raise ValueError(f"loop must be 'open_loop' or 'closed_loop', got {loop!r}")
-    if checkpoint is None:
-        if config_name is None:
-            raise ValueError('pass checkpoint or config_name')
-        checkpoint = checkpoint_for_serving_dir(serving_dir_for_config(config_name))
     if checkpoint is None:
         return os.path.join(EVAL_OUT, 'unlinked', loop)
 

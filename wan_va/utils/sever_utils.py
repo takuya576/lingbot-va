@@ -64,11 +64,12 @@ def worker_loop(model, local_rank):
     logger.info(f"[worker_loop] Rank {rank} exiting.")
 
 
-def run_async_server_mode(model, local_rank, host, port):
+def run_async_server_mode(model, local_rank, host, port, metadata=None):
     logger.info("Running in ASYNC SERVER mode")
     if local_rank == 0:
         dist_model = DistributedModelWrapper(model, local_rank=local_rank)
-        model_server = WebsocketPolicyServer(dist_model, host=host, port=port)
+        model_server = WebsocketPolicyServer(dist_model, host=host, port=port,
+                                             metadata=metadata)
         model_server.serve_forever()
 
         cmd = torch.tensor(

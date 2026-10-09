@@ -60,6 +60,9 @@ class VAClient:
         cls = _load_websocket_client_cls()
         # Blocks until the server accepts, retrying every 5s.
         self._client = cls(host=host, port=port)
+        # What the server says it loaded (wan_va_server.served_metadata), sent once in
+        # the handshake. Empty from a server that predates it.
+        self.server_metadata: Dict = dict(self._client.get_server_metadata() or {})
         self.prompt: Optional[str] = None
         # Set by every infer(); see there. Initialised so a caller can read them before
         # the first call without special-casing.

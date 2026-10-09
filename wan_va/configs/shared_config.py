@@ -14,6 +14,18 @@ va_shared_cfg.patch_size = (1, 2, 2)
 
 va_shared_cfg.enable_offload = False
 
+# Inference: how the first chunk treats latent frame 0's action slot, which training
+# fills with a pad (raw zeros, normalized and clipped).
+#   'denoised'  denoised along with the rest of the chunk, as training always has it --
+#               training never shows the model a clean token inside the chunk it is
+#               denoising.
+#   'train_pad' held to the pad at timestep 0. Leaves a ~10 mm first-step bias on
+#               YAM place_cube (vs ~2-3 mm denoised), mostly backward, which drove
+#               the idle arm into its fold stop.
+# Either way, frame 0 of the history fed back afterwards is the exact pad.
+# Override at launch with wan_va_server --frame0-action.
+va_shared_cfg.frame0_action = 'denoised'
+
 # --- LoRA parameter-efficient post-training (off by default) ---
 # `base_param_dtype` is the dtype the transformer is loaded in for training.
 # float32 reproduces the original full-finetune numerics; bfloat16 halves the
@@ -43,6 +55,16 @@ va_shared_cfg.full_train_action_io = True
 # Adam state. Off by default: the action noise schedule is unchanged, so there
 # is nothing new for it to learn.
 va_shared_cfg.full_train_action_cond_embedder = False
+
+# What the model's actions mean, for the YAM embodiment. 'eef' is the end-effector
+# pose layout: for env_type == 'robotwin_tshape', _action_post_process relativizes it
+# against each segment's first frame, and the YAM client converts it to joints via IK
+# (yam_bridge/action_convert.YamActionConverter). 'joint' is absolute joint angles in
+# the base model's joint slots (14:20 left, 21:27 right): never relativized, and the
+# client commands them directly (YamJointActionConverter). env_type stays
+# 'robotwin_tshape' in both, since it also fixes the camera canvas the cached latents
+# were extracted with. Reported to clients in the handshake (served_metadata).
+va_shared_cfg.action_space = 'eef'
 
 # Skip training samples whose packed sequence exceeds this many tokens, to bound
 # activation memory. None disables the guard.

@@ -9,7 +9,12 @@ MASTER_PORT=${MASTER_PORT:-"29502"}
 PORT=${PORT:-"1106"}
 LOG_RANK=${LOG_RANK:-"0"}
 TORCHFT_LIGHTHOUSE=${TORCHFT_LIGHTHOUSE:-"http://localhost:29510"}
-CONFIG_NAME=${CONFIG_NAME:-"yam_place_cube"}
+CONFIG_NAME=${CONFIG_NAME:-"yam_place_cube_base"}
+# GPU 0 is shared with other users' jobs; pick a free one with e.g. GPU=1.
+GPU=${GPU:-"0"}
+# Per-config by default, so rollouts of differently-initialized checkpoints of the
+# same task (yam_place_cube vs yam_place_cube_base) do not interleave in one directory.
+SAVE_ROOT=${SAVE_ROOT:-"example/${CONFIG_NAME}"}
 
 overrides=""
 if [ $# -ne 0 ]; then
@@ -22,11 +27,11 @@ master_port=${MASTER_PORT}
 log_rank=${LOG_RANK}
 torchft_lighthouse=${TORCHFT_LIGHTHOUSE}
 config_name=${CONFIG_NAME}
-save_root='example/yam_place_cube'
+save_root=${SAVE_ROOT}
 ## cmd setting
 export TOKENIZERS_PARALLELISM=false
 PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True" TORCHFT_LIGHTHOUSE=${torchft_lighthouse} \
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=${GPU} \
 python -m torch.distributed.run \
     --nproc_per_node=${num_gpu} \
     --local-ranks-filter=${log_rank} \
